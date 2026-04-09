@@ -1,0 +1,332 @@
+[
+  {
+    "id": "nato_founding_1949",
+    "text": "The North Atlantic Treaty Organization (NATO) was established on April 4, 1949, by 12 founding members including the United States, United Kingdom, France, and Canada. The treaty's Article 5 established the principle of collective defense: an attack against one member is considered an attack against all. NATO was created as a Western counterweight to Soviet military power in Europe during the Cold War. The alliance has since expanded to 31 members, with each expansion (1999: Poland, Czech Republic, Hungary; 2004: Baltic states) drawing fierce opposition from Russia, which views NATO enlargement as a fundamental threat to its security.",
+    "metadata": {
+      "year": "1949",
+      "countries": "US,GB,FR,DE",
+      "type": "alliance",
+      "tags": "NATO,collective_defense,Article_5,Cold_War,transatlantic"
+    }
+  },
+  {
+    "id": "korean_war_1950",
+    "text": "The Korean War (1950-1953) began when North Korean forces invaded South Korea on June 25, 1950. The United States led a UN coalition to defend South Korea, while China entered the war in October 1950 to support North Korea after UN forces approached the Chinese border at the Yalu River. The war ended in an armistice in 1953 with no peace treaty, leaving the Korean Peninsula technically still at war. The conflict resulted in approximately 2.5 million civilian casualties and cemented the division of Korea along the 38th parallel. The US maintains approximately 28,500 troops in South Korea to this day.",
+    "metadata": {
+      "year": "1950",
+      "countries": "US,KP,CN",
+      "type": "conflict",
+      "tags": "Korean_War,armistice,38th_parallel,UN_coalition,DMZ"
+    }
+  },
+  {
+    "id": "sino_indian_war_1962",
+    "text": "The Sino-Indian War of 1962 was a border conflict between China and India over disputed territories in Aksai Chin and Arunachal Pradesh (then NEFA). China launched a surprise offensive on October 20, 1962, and achieved a decisive military victory before declaring a unilateral ceasefire on November 21. The war humiliated India's military and shattered the 'Hindi-Chini Bhai-Bhai' (Indians and Chinese are brothers) spirit of Nehru's era. The Line of Actual Control (LAC) remains disputed, and the unresolved border has been the source of recurring standoffs, including the deadly Galwan Valley clash in 2020.",
+    "metadata": {
+      "year": "1962",
+      "countries": "CN,IN",
+      "type": "conflict",
+      "tags": "border_dispute,LAC,Aksai_Chin,Arunachal_Pradesh,Galwan"
+    }
+  },
+  {
+    "id": "six_day_war_1967",
+    "text": "The Six-Day War (June 5-10, 1967) was fought between Israel and the neighboring states of Egypt, Jordan, and Syria. Israel launched a preemptive strike against Egyptian air forces and achieved a swift, decisive victory. Israel captured the Sinai Peninsula, Gaza Strip, West Bank, East Jerusalem, and the Golan Heights. The war transformed the geopolitical map of the Middle East and created the Israeli occupation of Palestinian territories that continues today. UN Resolution 242 called for withdrawal from occupied territories and recognition of all states' right to exist, but implementation remains unfulfilled.",
+    "metadata": {
+      "year": "1967",
+      "countries": "IL,IR",
+      "type": "conflict",
+      "tags": "Six_Day_War,occupation,West_Bank,Gaza,Golan_Heights,UNSCR_242"
+    }
+  },
+  {
+    "id": "nixon_china_1972",
+    "text": "US President Richard Nixon's visit to China in February 1972 was a watershed moment in Cold War diplomacy. The visit, facilitated by National Security Advisor Henry Kissinger's secret trip in 1971, ended 25 years of diplomatic isolation between the US and the People's Republic of China. The resulting Shanghai Communique established the framework for US-China relations, with the US acknowledging (but not endorsing) the Chinese position that Taiwan is part of China. This 'strategic ambiguity' on Taiwan has been the foundation of US-China relations for over 50 years.",
+    "metadata": {
+      "year": "1972",
+      "countries": "US,CN",
+      "type": "diplomacy",
+      "tags": "Nixon,opening_to_China,Shanghai_Communique,Taiwan,strategic_ambiguity"
+    }
+  },
+  {
+    "id": "camp_david_1978",
+    "text": "The Camp David Accords, signed on September 17, 1978, were mediated by US President Jimmy Carter between Egyptian President Anwar Sadat and Israeli Prime Minister Menachem Begin. The accords led to the 1979 Egypt-Israel Peace Treaty, the first peace agreement between Israel and an Arab state. Egypt recognized Israel's right to exist, and Israel returned the Sinai Peninsula to Egypt. Sadat was assassinated in 1981 partly due to domestic opposition to the peace deal. The accords demonstrated that Arab-Israeli peace was possible but also isolated Egypt from much of the Arab world for decades.",
+    "metadata": {
+      "year": "1978",
+      "countries": "US,IL",
+      "type": "treaty",
+      "tags": "Camp_David,Egypt_Israel_peace,Sinai,Sadat,Begin,Carter"
+    }
+  },
+  {
+    "id": "iran_revolution_1979",
+    "text": "The Iranian Revolution of 1979 overthrew the US-backed Shah Mohammad Reza Pahlavi and established the Islamic Republic of Iran under Ayatollah Ruhollah Khomeini. The revolution was a seismic event that transformed Middle Eastern geopolitics. The subsequent Iran hostage crisis (444 days, 1979-1981) severed US-Iranian relations, which remain broken to this day. The revolution established Iran's unique theocratic system (velayat-e faqih) and positioned Iran as the leader of anti-Western, anti-Israeli resistance in the region. Iran's revolutionary export ideology has been a driving force behind its support for Hezbollah, Hamas, and other proxy groups.",
+    "metadata": {
+      "year": "1979",
+      "countries": "IR,US",
+      "type": "revolution",
+      "tags": "Iranian_Revolution,Khomeini,hostage_crisis,theocracy,anti_Western"
+    }
+  },
+  {
+    "id": "iran_iraq_war_1980",
+    "text": "The Iran-Iraq War (1980-1988) was one of the deadliest conflicts of the 20th century, killing an estimated 500,000-1,000,000 people. Iraq under Saddam Hussein invaded Iran in September 1980, seeking to exploit post-revolutionary chaos. The war devolved into trench warfare reminiscent of World War I, including Iraq's use of chemical weapons against Iranian forces and Kurdish civilians (Halabja massacre, 1988). The US and Western powers largely supported Iraq during the conflict, providing intelligence, weapons, and economic aid. Iran remembers this Western support for Saddam as a fundamental betrayal that shapes its deep distrust of Western powers.",
+    "metadata": {
+      "year": "1980",
+      "countries": "IR,US",
+      "type": "conflict",
+      "tags": "Iran_Iraq_War,chemical_weapons,Halabja,Saddam_Hussein,Western_support_Iraq"
+    }
+  },
+  {
+    "id": "falklands_war_1982",
+    "text": "The Falklands War (April-June 1982) was fought between the United Kingdom and Argentina over the Falkland Islands (Islas Malvinas) in the South Atlantic. Argentina invaded the British territory on April 2, 1982, prompting PM Margaret Thatcher to dispatch a naval task force. The UK recaptured the islands after 74 days of conflict, with 255 British and 649 Argentine deaths. The war demonstrated the UK's continued ability to project military power globally and reinforced the principle that territorial sovereignty cannot be changed by force. The UK maintains a military garrison on the islands to this day.",
+    "metadata": {
+      "year": "1982",
+      "countries": "GB",
+      "type": "conflict",
+      "tags": "Falklands,Malvinas,Thatcher,power_projection,sovereignty"
+    }
+  },
+  {
+    "id": "soviet_collapse_1991",
+    "text": "The dissolution of the Soviet Union on December 26, 1991, ended the Cold War and fundamentally reshaped global geopolitics. The USSR fragmented into 15 independent states, with Russia as the successor state. NATO's 'victory' in the Cold War led to US unipolar dominance. Russia experienced economic collapse, territorial loss, and national humiliation throughout the 1990s under Boris Yeltsin. Russians across the political spectrum view the 1990s as a period of Western exploitation. Vladimir Putin famously called the Soviet collapse 'the greatest geopolitical catastrophe of the 20th century.' The question of whether Western leaders promised NATO would not expand eastward remains deeply contested and central to Russia's security grievances.",
+    "metadata": {
+      "year": "1991",
+      "countries": "RU,US",
+      "type": "geopolitical_shift",
+      "tags": "Soviet_collapse,Cold_War_end,unipolarity,NATO_expansion_promise,1990s_humiliation"
+    }
+  },
+  {
+    "id": "gulf_war_1991",
+    "text": "The Gulf War (January-February 1991) was a US-led coalition response to Iraq's invasion of Kuwait in August 1990. The coalition of 35 nations, authorized by UN Security Council resolutions, liberated Kuwait in a decisive 42-day air campaign followed by a 100-hour ground war. The US demonstrated overwhelming military superiority and established itself as the uncontested global military power. The war established the precedent of US-led 'coalitions of the willing' and demonstrated the power of precision-guided munitions. However, the decision not to remove Saddam Hussein left unfinished business that would lead to the 2003 Iraq War.",
+    "metadata": {
+      "year": "1991",
+      "countries": "US,GB,FR",
+      "type": "conflict",
+      "tags": "Gulf_War,Kuwait,coalition,UN_authorized,precision_warfare"
+    }
+  },
+  {
+    "id": "nuclear_tests_india_1998",
+    "text": "India conducted five nuclear weapons tests (Operation Shakti) at Pokhran on May 11 and 13, 1998, declaring itself a nuclear weapons state. Pakistan responded with six nuclear tests on May 28 and 30, 1998 (Chagai tests), making South Asia a nuclear flashpoint. India's nuclear doctrine is based on 'credible minimum deterrence' and 'no first use' policy. The tests triggered international sanctions but ultimately led to the India-US Civil Nuclear Deal (2005), which recognized India's nuclear status outside the NPT framework and marked a strategic realignment bringing India closer to the US.",
+    "metadata": {
+      "year": "1998",
+      "countries": "IN,US",
+      "type": "nuclear",
+      "tags": "Pokhran,nuclear_tests,no_first_use,India_US_nuclear_deal,NPT"
+    }
+  },
+  {
+    "id": "iraq_war_2003",
+    "text": "The US-led invasion of Iraq in March 2003, justified by claims of weapons of mass destruction (WMDs) that proved unfounded, toppled Saddam Hussein's regime but destabilized the entire Middle East. The UK joined the coalition under PM Tony Blair, but France and Germany notably opposed the invasion, causing a transatlantic rift. The war killed hundreds of thousands of Iraqis, cost trillions of dollars, and spawned ISIS. France's opposition, led by President Jacques Chirac and Foreign Minister Dominique de Villepin's famous UN speech, demonstrated French willingness to break ranks with the US on matters of principle. The war remains the defining example of US unilateral military overreach.",
+    "metadata": {
+      "year": "2003",
+      "countries": "US,GB,FR,DE,IR",
+      "type": "conflict",
+      "tags": "Iraq_War,WMD,regime_change,French_opposition,transatlantic_rift,ISIS"
+    }
+  },
+  {
+    "id": "jcpoa_2015",
+    "text": "The Joint Comprehensive Plan of Action (JCPOA), commonly known as the Iran Nuclear Deal, was signed on July 14, 2015, between Iran and the P5+1 (US, UK, France, Russia, China, Germany). Iran agreed to limit its nuclear program and submit to inspections in exchange for sanctions relief. The deal was hailed as a diplomatic triumph, reducing Iran's uranium enrichment from 20% to 3.67% and cutting its centrifuge count by two-thirds. However, the US unilaterally withdrew from the JCPOA on May 8, 2018, under President Trump, reimposing 'maximum pressure' sanctions. Iran subsequently resumed enrichment to 60% (near weapons-grade). Israel and Saudi Arabia opposed the deal from the start, viewing it as legitimizing Iran's nuclear program.",
+    "metadata": {
+      "year": "2015",
+      "countries": "IR,US,GB,FR,RU,CN,DE,IL",
+      "type": "treaty",
+      "tags": "JCPOA,Iran_nuclear,P5+1,sanctions_relief,uranium_enrichment,maximum_pressure"
+    }
+  },
+  {
+    "id": "crimea_2014",
+    "text": "Russia annexed Crimea from Ukraine in March 2014, following the Euromaidan revolution that ousted pro-Russian President Viktor Yanukovych. Russia deployed unmarked soldiers ('little green men') to seize key facilities, then organized a disputed referendum showing 97% support for joining Russia. The annexation was the most significant forcible border change in Europe since World War II. Western nations imposed sanctions on Russia but took no military action. The event shattered the post-Cold War European security order and foreshadowed Russia's full-scale invasion of Ukraine in 2022. Russia justified the annexation by citing protection of ethnic Russians and the historically Russian nature of Crimea (transferred to Ukraine by Khrushchev in 1954).",
+    "metadata": {
+      "year": "2014",
+      "countries": "RU,US,GB,FR,DE",
+      "type": "annexation",
+      "tags": "Crimea,Ukraine,annexation,sanctions,Euromaidan,little_green_men"
+    }
+  },
+  {
+    "id": "bri_2013",
+    "text": "China's Belt and Road Initiative (BRI), announced by President Xi Jinping in 2013, is the most ambitious infrastructure and investment program in history. Spanning 140+ countries with estimated investments exceeding $1 trillion, BRI builds roads, railways, ports, and digital infrastructure across Asia, Africa, Europe, and Latin America. Critics call it 'debt-trap diplomacy' — lending developing nations money for infrastructure they cannot afford, then extracting strategic concessions (e.g., Sri Lanka's Hambantota Port lease to China for 99 years). Supporters see it as a genuine development initiative filling the global infrastructure gap. BRI has fundamentally shifted China's global influence, creating economic dependencies that translate into diplomatic leverage, particularly in UN voting blocs.",
+    "metadata": {
+      "year": "2013",
+      "countries": "CN,US,IN",
+      "type": "economic",
+      "tags": "Belt_and_Road,BRI,infrastructure,debt_trap,global_influence,Xi_Jinping"
+    }
+  },
+  {
+    "id": "abraham_accords_2020",
+    "text": "The Abraham Accords, signed on September 15, 2020, normalized diplomatic relations between Israel and the United Arab Emirates (UAE) and Bahrain, with Sudan and Morocco following. Brokered by the Trump administration, the accords bypassed the traditional requirement that Arab-Israeli normalization must follow a Palestinian peace deal. The agreements were driven by shared opposition to Iran and economic/technology interests. Iran and Palestinian factions condemned the accords as a betrayal. Saudi Arabia indicated progress toward normalization but paused after the October 7, 2023 Hamas attack. The accords represent a fundamental realignment of Middle Eastern alliances based on Iranian threat perception rather than the Palestinian issue.",
+    "metadata": {
+      "year": "2020",
+      "countries": "IL,US,IR",
+      "type": "treaty",
+      "tags": "Abraham_Accords,normalization,UAE,Bahrain,anti_Iran,Palestinian_bypass"
+    }
+  },
+  {
+    "id": "aukus_2021",
+    "text": "The AUKUS security pact, announced on September 15, 2021, is a trilateral agreement between Australia, the United Kingdom, and the United States. The centerpiece is Australia's acquisition of nuclear-powered submarines using US/UK technology. The deal caused a major diplomatic crisis with France, which lost a $66 billion submarine contract with Australia. France recalled its ambassadors from the US and Australia — an unprecedented act between allies. AUKUS represents a strategic pivot to contain China in the Indo-Pacific region and signals the end of the post-WWII restraint on nuclear propulsion technology sharing. China condemned AUKUS as an 'Anglo-Saxon clique' that would trigger a regional arms race.",
+    "metadata": {
+      "year": "2021",
+      "countries": "US,GB,CN,FR",
+      "type": "alliance",
+      "tags": "AUKUS,nuclear_submarines,Indo_Pacific,France_betrayal,China_containment"
+    }
+  },
+  {
+    "id": "ukraine_invasion_2022",
+    "text": "Russia launched a full-scale invasion of Ukraine on February 24, 2022, the largest military operation in Europe since World War II. President Putin justified the invasion as a 'special military operation' to 'denazify' and 'demilitarize' Ukraine and prevent NATO expansion. The invasion shocked the world, triggered massive Western sanctions, and united NATO in unprecedented solidarity. The US and allies provided over $100 billion in military aid to Ukraine. Germany announced its historic 'Zeitenwende' (turning point), committing EUR 100 billion to defense. The war has caused tens of thousands of casualties, displaced millions, disrupted global energy and food markets, and fundamentally reshaped European security architecture. China has maintained a pro-Russia neutrality while calling for peace.",
+    "metadata": {
+      "year": "2022",
+      "countries": "RU,US,GB,FR,DE,CN",
+      "type": "conflict",
+      "tags": "Ukraine_invasion,Zeitenwende,NATO_unity,sanctions,energy_crisis,Bucha"
+    }
+  },
+  {
+    "id": "october7_2023",
+    "text": "On October 7, 2023, Hamas launched a surprise attack on southern Israel from the Gaza Strip, killing approximately 1,200 people and taking over 240 hostages. It was the deadliest day in Israel's history and the worst mass killing of Jews since the Holocaust. Israel responded with a massive military campaign in Gaza, causing extensive destruction and tens of thousands of Palestinian casualties. The war reignited global debate over the Israeli-Palestinian conflict, strained US-Israeli relations over civilian casualties, and disrupted Abraham Accords normalization with Saudi Arabia. Iran-backed groups including Hezbollah in Lebanon and the Houthis in Yemen opened additional fronts, creating a regional escalation spiral. The war exposed deep divisions in Western societies and international institutions.",
+    "metadata": {
+      "year": "2023",
+      "countries": "IL,IR,US,GB",
+      "type": "conflict",
+      "tags": "October_7,Hamas,Gaza,hostages,Hezbollah,Houthis,regional_escalation"
+    }
+  },
+  {
+    "id": "russia_nk_alliance_2024",
+    "text": "In 2024, Russia and North Korea significantly deepened their military alliance. North Korea supplied Russia with millions of artillery shells and ballistic missiles for use in Ukraine, and deployed an estimated 10,000-12,000 North Korean troops to fight alongside Russian forces in Kursk region. In exchange, Russia provided North Korea with advanced military technology, satellite assistance, and economic support, potentially including nuclear submarine and ICBM technology. The alliance represented the most significant geopolitical realignment since the Cold War, with both pariah states pooling resources to counter Western pressure. The US, South Korea, and Japan condemned the arrangement as a dangerous escalation.",
+    "metadata": {
+      "year": "2024",
+      "countries": "RU,KP,US",
+      "type": "alliance",
+      "tags": "Russia_DPRK_alliance,arms_trade,North_Korean_troops,Ukraine,military_technology"
+    }
+  },
+  {
+    "id": "china_saudi_iran_2023",
+    "text": "In a stunning diplomatic breakthrough, China brokered the restoration of diplomatic relations between Saudi Arabia and Iran in March 2023, after seven years of severed ties. The deal was significant not only for its content but for the fact that it was achieved by Beijing, not Washington, signaling China's growing diplomatic clout in the Middle East. The agreement included commitments to respect sovereignty and non-interference in internal affairs. The deal challenged the US monopoly on Middle East diplomacy and demonstrated China's ability to position itself as a neutral mediator between rival powers. It also complicated Israel's efforts to build an anti-Iran coalition with Arab states.",
+    "metadata": {
+      "year": "2023",
+      "countries": "CN,IR,IL,US",
+      "type": "diplomacy",
+      "tags": "China_mediation,Saudi_Iran_rapprochement,Middle_East_diplomacy,US_displacement"
+    }
+  },
+  {
+    "id": "brics_expansion_2023",
+    "text": "At the August 2023 BRICS summit in Johannesburg, the bloc (Brazil, Russia, India, China, South Africa) invited six new members: Argentina, Egypt, Ethiopia, Iran, Saudi Arabia, and the UAE (Argentina later declined). The expansion transformed BRICS from an economic forum into a geopolitical counterweight to Western institutions (G7, IMF, World Bank). Expanded BRICS represents 46% of the world's population, 36% of global GDP (PPP), and controls 80% of global oil production. Russia and China pushed the expansion as a vehicle for de-dollarization and an alternative to the US-led financial order. India, while supportive, sought to prevent BRICS from becoming an anti-Western bloc.",
+    "metadata": {
+      "year": "2023",
+      "countries": "CN,RU,IN,IR,US",
+      "type": "multilateral",
+      "tags": "BRICS_expansion,de_dollarization,multipolarity,Global_South,alternative_order"
+    }
+  },
+  {
+    "id": "us_china_trade_war_2018",
+    "text": "The US-China trade war began in 2018 when President Trump imposed tariffs on $360 billion worth of Chinese goods, citing unfair trade practices, intellectual property theft, and forced technology transfer. China retaliated with tariffs on US agricultural and industrial products. The conflict expanded beyond trade to encompass technology competition, with the US banning Huawei from 5G networks and restricting semiconductor exports to China. The CHIPS Act (2022) allocated $280 billion to boost domestic semiconductor production. The trade war accelerated the 'decoupling' of US and Chinese economies and forced other nations to navigate between the two superpowers. The technology dimension — particularly AI and semiconductors — has become the central front of US-China strategic competition.",
+    "metadata": {
+      "year": "2018",
+      "countries": "US,CN",
+      "type": "economic",
+      "tags": "trade_war,tariffs,Huawei,semiconductors,CHIPS_Act,decoupling,tech_competition"
+    }
+  },
+  {
+    "id": "nord_stream_politics",
+    "text": "The Nord Stream pipelines (1 and 2) were designed to transport Russian natural gas directly to Germany via the Baltic Sea, bypassing Ukraine and Poland. Nord Stream 2 became the most politically controversial energy project in Europe, with the US imposing sanctions on companies involved in its construction, arguing it would increase European dependence on Russian energy. Germany initially defended the project as a commercial undertaking. After Russia's invasion of Ukraine in February 2022, Germany halted Nord Stream 2 certification. In September 2022, both pipelines were damaged by underwater explosions in what was widely described as sabotage, though responsibility remains disputed. The incident highlighted Europe's energy vulnerability and accelerated the continent's transition away from Russian gas.",
+    "metadata": {
+      "year": "2022",
+      "countries": "RU,DE,US",
+      "type": "energy",
+      "tags": "Nord_Stream,gas_pipeline,energy_dependence,sabotage,European_energy_security"
+    }
+  },
+  {
+    "id": "south_china_sea_disputes",
+    "text": "The South China Sea disputes involve competing territorial claims over islands, reefs, and maritime zones in one of the world's most strategically important waterways. China claims approximately 90% of the South China Sea based on its 'nine-dash line' and has built artificial islands with military installations on several reefs since 2014. In 2016, the Permanent Court of Arbitration in The Hague ruled that China's claims had no legal basis under UNCLOS, but China rejected the ruling. The US conducts regular 'freedom of navigation' operations (FONOPs) through the disputed waters. The sea carries $5.3 trillion in annual trade and contains significant oil and gas reserves. The disputes involve China, Vietnam, the Philippines, Malaysia, Brunei, and Taiwan.",
+    "metadata": {
+      "year": "2014",
+      "countries": "CN,US",
+      "type": "territorial",
+      "tags": "South_China_Sea,nine_dash_line,island_building,FONOPs,UNCLOS,arbitration"
+    }
+  },
+  {
+    "id": "taiwan_strait_crisis_2022",
+    "text": "US House Speaker Nancy Pelosi's visit to Taiwan on August 2, 2022, triggered the most serious crisis in the Taiwan Strait since the 1990s. China responded with unprecedented military exercises, launching ballistic missiles over Taiwan for the first time, effectively simulating a blockade. China's 'Anti-Secession Law' (2005) authorizes the use of force if Taiwan moves toward formal independence. The US maintains 'strategic ambiguity' under the Taiwan Relations Act (1979), providing Taiwan with defensive weapons while not formally committing to its defense. Taiwan produces over 90% of the world's most advanced semiconductors (via TSMC), making it the most economically critical flashpoint on Earth. A Chinese invasion of Taiwan would likely trigger a global economic catastrophe and potential military confrontation between nuclear powers.",
+    "metadata": {
+      "year": "2022",
+      "countries": "CN,US",
+      "type": "crisis",
+      "tags": "Taiwan_Strait,Pelosi_visit,military_exercises,TSMC,semiconductors,strategic_ambiguity"
+    }
+  },
+  {
+    "id": "quad_revival_2017",
+    "text": "The Quadrilateral Security Dialogue (Quad), comprising the United States, Japan, India, and Australia, was revived in 2017 after a decade of dormancy. The Quad is an informal strategic forum aimed at maintaining a 'free and open Indo-Pacific' — widely understood as a counterbalance to China's growing military and economic influence in the region. The Quad has evolved from dialogue to practical cooperation in areas including COVID-19 vaccine distribution, critical technologies, maritime security, and climate change. India's participation is significant as it marks a departure from strict non-alignment, though India insists the Quad is not a military alliance or 'Asian NATO.' China views the Quad as a hostile encirclement strategy.",
+    "metadata": {
+      "year": "2017",
+      "countries": "US,IN,CN",
+      "type": "alliance",
+      "tags": "Quad,Indo_Pacific,China_containment,India_alignment,Free_Open_Indo_Pacific"
+    }
+  },
+  {
+    "id": "french_sahel_withdrawal_2023",
+    "text": "Between 2022 and 2023, France withdrew its military forces from Mali, Burkina Faso, and Niger following a series of anti-French military coups in the Sahel region. The juntas expelled French forces and turned to Russia's Wagner Group (later Africa Corps) for security assistance. The withdrawals marked the effective end of France's post-colonial military presence in the Sahel (Francafrique), which had lasted over 60 years. France had deployed Operation Barkhane (5,000+ troops) since 2014 to combat jihadist groups in the region. The collapse of French influence in West Africa represents one of the most significant geopolitical shifts in the region since decolonization and a major strategic gain for Russia.",
+    "metadata": {
+      "year": "2023",
+      "countries": "FR,RU",
+      "type": "geopolitical_shift",
+      "tags": "Francafrique,Sahel,Wagner_Group,military_coups,decolonization,Africa"
+    }
+  },
+  {
+    "id": "soleimani_assassination_2020",
+    "text": "On January 3, 2020, the United States assassinated Iranian General Qasem Soleimani, commander of the IRGC Quds Force, in a drone strike at Baghdad International Airport. Soleimani was considered the architect of Iran's regional proxy strategy, controlling operations across Iraq, Syria, Lebanon, and Yemen. Iran retaliated by launching 22 ballistic missiles at US bases in Iraq on January 8, 2020 (Operation Martyr Soleimani), deliberately avoiding US casualties. The assassination was the most significant US-Iran escalation since the 1979 hostage crisis and demonstrated the US willingness to target senior foreign military leaders with precision strikes. Iran vowed 'severe revenge' and has continued to view the strike as a fundamental grievance.",
+    "metadata": {
+      "year": "2020",
+      "countries": "IR,US",
+      "type": "military_action",
+      "tags": "Soleimani,IRGC,Quds_Force,drone_strike,retaliation,proxy_warfare"
+    }
+  },
+  {
+    "id": "german_zeitenwende_2022",
+    "text": "On February 27, 2022, three days after Russia's invasion of Ukraine, German Chancellor Olaf Scholz delivered his landmark 'Zeitenwende' (turning point) speech to the Bundestag. He announced a 100 billion euro special fund for the Bundeswehr (military), committed to exceeding NATO's 2% GDP defense spending target, and declared the end of Germany's post-WWII pacifist foreign policy. Germany began supplying weapons to Ukraine — breaking a decades-long taboo against sending arms to conflict zones. The speech marked the most dramatic shift in German defense policy since reunification in 1990. However, critics noted that actual implementation has been slow, with bureaucratic procurement processes and political hesitancy delaying many commitments.",
+    "metadata": {
+      "year": "2022",
+      "countries": "DE,RU,US",
+      "type": "policy_shift",
+      "tags": "Zeitenwende,Scholz,Bundeswehr,defense_spending,pacifism_end,arms_to_Ukraine"
+    }
+  },
+  {
+    "id": "nk_nuclear_tests",
+    "text": "North Korea has conducted six nuclear tests: 2006, 2009, 2013, and three in 2016-2017 (including a claimed thermonuclear device in September 2017). Each test was followed by UN Security Council sanctions. North Korea has also developed ICBM capability, with the Hwasong-17 (tested 2022) theoretically capable of reaching any point in the continental United States. Kim Jong-un has declared North Korea an 'irreversible' nuclear weapons state and enshrined nuclear weapons in the constitution (2022). The 'Agreed Framework' of 1994 and subsequent Six-Party Talks both failed to denuclearize the Korean Peninsula. North Korea views its nuclear arsenal as the ultimate guarantee of regime survival against what it perceives as decades of US hostility and threatened regime change.",
+    "metadata": {
+      "year": "2017",
+      "countries": "KP,US,CN,RU",
+      "type": "nuclear",
+      "tags": "nuclear_tests,ICBM,Hwasong,regime_survival,sanctions,Six_Party_Talks"
+    }
+  },
+  {
+    "id": "india_russia_energy_2022",
+    "text": "Despite Western sanctions on Russia following the 2022 Ukraine invasion, India dramatically increased its purchases of discounted Russian crude oil, becoming Russia's second-largest oil customer after China. Indian refineries bought Russian oil at discounts of $20-30 per barrel, refined it, and exported petroleum products globally — including to Europe. The move highlighted India's 'strategic autonomy' and refusal to align with Western sanctions at the expense of Indian economic interests. The US expressed 'concern' but largely refrained from sanctioning India, recognizing its strategic importance as a Quad partner and China counterweight. India's position exemplified the Global South's resistance to Western-led sanctions that many viewed as unilateral and selective.",
+    "metadata": {
+      "year": "2022",
+      "countries": "IN,RU,US",
+      "type": "economic",
+      "tags": "Russian_oil,sanctions_bypass,strategic_autonomy,India_balancing,discounted_crude"
+    }
+  }
+]

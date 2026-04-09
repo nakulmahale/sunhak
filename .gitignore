@@ -1,0 +1,45 @@
+# -------------------------------------------------------------------
+# Backend (Python / FastAPI / LangGraph)
+# -------------------------------------------------------------------
+
+# Environments
+.env
+.venv/
+venv/
+env/
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+env.bak/
+venv.bak/
+
+# Database / Vector Store
+chroma_data/
+*.sqlite3
+*.db
+
+# Logs & IDE 
+logs/
+*.log
+.vscode/
+.idea/
+*.swp
+.DS_Store
+
+# -------------------------------------------------------------------
+# Frontend (Next.js / Node)
+# -------------------------------------------------------------------
+
+frontend/node_modules/
+frontend/.next/
+frontend/out/
+frontend/build/
+frontend/.env*.local
+frontend/.turbo/
+frontend/coverage/
+
+# Next.js build output
+*.tsbuildinfo
+next-env.d.ts

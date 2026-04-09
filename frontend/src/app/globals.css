@@ -1,0 +1,168 @@
+@import "tailwindcss";
+
+:root {
+  --bg-primary: #0a0e17;
+  --bg-secondary: #0f1623;
+  --bg-card: #141c2e;
+  --bg-glass: rgba(20, 28, 46, 0.7);
+  --border-subtle: rgba(100, 180, 255, 0.12);
+  --border-glow: rgba(100, 180, 255, 0.3);
+  --text-primary: #e4e8f0;
+  --text-secondary: #8892a8;
+  --text-muted: #5a6478;
+  --accent-cyan: #00e5ff;
+  --accent-blue: #3b82f6;
+  --accent-red: #ef4444;
+  --accent-orange: #f59e0b;
+  --accent-green: #10b981;
+  --accent-purple: #8b5cf6;
+  --neon-cyan: 0 200 255;
+  --neon-red: 239 68 68;
+}
+
+@theme inline {
+  --color-background: var(--bg-primary);
+  --color-foreground: var(--text-primary);
+  --font-sans: var(--font-geist-sans);
+  --font-mono: var(--font-geist-mono);
+}
+
+body {
+  background: var(--bg-primary);
+  color: var(--text-primary);
+  font-family: var(--font-sans), system-ui, sans-serif;
+  overflow: hidden;
+}
+
+/* Scrollbar */
+::-webkit-scrollbar {
+  width: 6px;
+}
+::-webkit-scrollbar-track {
+  background: var(--bg-secondary);
+}
+::-webkit-scrollbar-thumb {
+  background: rgba(100, 180, 255, 0.2);
+  border-radius: 3px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(100, 180, 255, 0.4);
+}
+
+/* Glass Card */
+.glass-card {
+  background: var(--bg-glass);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid var(--border-subtle);
+  border-radius: 12px;
+}
+
+.glass-card-glow {
+  background: var(--bg-glass);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid var(--border-glow);
+  border-radius: 12px;
+  box-shadow: 0 0 30px rgba(var(--neon-cyan), 0.05);
+}
+
+/* Neon text */
+.neon-text {
+  color: var(--accent-cyan);
+  text-shadow: 0 0 10px rgba(var(--neon-cyan), 0.5),
+               0 0 30px rgba(var(--neon-cyan), 0.2);
+}
+
+.neon-red-text {
+  color: var(--accent-red);
+  text-shadow: 0 0 10px rgba(var(--neon-red), 0.5),
+               0 0 30px rgba(var(--neon-red), 0.2);
+}
+
+/* Grid lines background pattern */
+.grid-pattern {
+  background-image:
+    linear-gradient(rgba(100, 180, 255, 0.03) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(100, 180, 255, 0.03) 1px, transparent 1px);
+  background-size: 40px 40px;
+}
+
+/* Pulse animation for agent avatars */
+@keyframes pulse-ring {
+  0% { box-shadow: 0 0 0 0 rgba(var(--neon-cyan), 0.5); }
+  70% { box-shadow: 0 0 0 12px rgba(var(--neon-cyan), 0); }
+  100% { box-shadow: 0 0 0 0 rgba(var(--neon-cyan), 0); }
+}
+
+@keyframes pulse-ring-red {
+  0% { box-shadow: 0 0 0 0 rgba(var(--neon-red), 0.5); }
+  70% { box-shadow: 0 0 0 12px rgba(var(--neon-red), 0); }
+  100% { box-shadow: 0 0 0 0 rgba(var(--neon-red), 0); }
+}
+
+.pulse-active {
+  animation: pulse-ring 1.5s ease-out infinite;
+}
+
+.pulse-warning {
+  animation: pulse-ring-red 1s ease-out infinite;
+}
+
+/* Typewriter cursor */
+@keyframes blink-cursor {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0; }
+}
+
+.typewriter-cursor::after {
+  content: '▌';
+  animation: blink-cursor 0.8s step-end infinite;
+  color: var(--accent-cyan);
+}
+
+/* Scanline effect */
+.scanlines {
+  position: relative;
+}
+.scanlines::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: repeating-linear-gradient(
+    0deg,
+    transparent,
+    transparent 2px,
+    rgba(0, 0, 0, 0.03) 2px,
+    rgba(0, 0, 0, 0.03) 4px
+  );
+  pointer-events: none;
+}
+
+/* Terminal text style */
+.terminal-text {
+  font-family: var(--font-mono), 'Courier New', monospace;
+  font-size: 0.75rem;
+  line-height: 1.4;
+  color: var(--accent-green);
+}
+
+/* Status indicator dot animations */
+@keyframes status-blink {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.3; }
+}
+.status-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  animation: status-blink 2s ease-in-out infinite;
+}
+
+/* Warning state for the whole UI */
+.warning-state {
+  border-color: rgba(var(--neon-red), 0.4) !important;
+}
+.warning-state .glass-card {
+  border-color: rgba(var(--neon-red), 0.3);
+}

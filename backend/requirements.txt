@@ -1,0 +1,25 @@
+# Project EMERGENCE - Backend Dependencies
+# Core Framework
+fastapi==0.115.6
+uvicorn[standard]==0.34.0
+websockets==14.1
+python-dotenv==1.0.1
+pydantic==2.10.4
+httpx==0.28.1
+
+# LLM & Orchestration
+langgraph==0.2.60
+langchain-google-genai==2.0.8
+langchain-groq
+langchain-core==0.3.28
+google-genai==1.0.0
+
+# Vector Store / RAG
+chromadb==0.5.23
+
+# News Fetching
+feedparser==6.0.11
+gdeltdoc==1.5.0
+
+# Utilities
+python-multipart==0.0.20
