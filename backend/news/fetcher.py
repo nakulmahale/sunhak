@@ -191,7 +191,30 @@ async def fetch_geopolitical_headline() -> dict | None:
         return chosen
 
     print("[NEWS] All sources failed to return headlines")
-    return None
+    # Fallback: synthetic headline (clearly labeled) to keep the simulation running.
+    # Keep it Iran-focused as requested, but avoid graphic violence / incitement.
+    synthetic = [
+        {
+            "title": "Iran faces renewed diplomatic pressure as nuclear talks stall and regional partners seek de-escalation",
+            "summary": "Negotiators report limited progress amid competing demands. Regional actors urge confidence-building steps, while observers watch for shifts in sanctions enforcement and verification commitments.",
+        },
+        {
+            "title": "Iran signals willingness to engage on sanctions relief framework as international scrutiny intensifies",
+            "summary": "Officials indicate conditional openness to phased measures tied to verification. Analysts note domestic economic constraints and the role of third-party mediators in shaping next steps.",
+        },
+        {
+            "title": "Iran’s regional policy draws new debate as neighboring states call for clearer security assurances",
+            "summary": "Diplomatic channels remain active, but trust deficits persist. Stakeholders discuss monitoring mechanisms, crisis hotlines, and renewed multilateral engagement to reduce miscalculation.",
+        },
+    ]
+    chosen = random.choice(synthetic)
+    return {
+        "title": chosen["title"],
+        "url": "",
+        "source": "System Generated (Synthetic)",
+        "date": datetime.utcnow().isoformat() + "Z",
+        "summary": chosen["summary"],
+    }
 
 
 async def fetch_multiple_headlines(count: int = 5) -> list[dict]:

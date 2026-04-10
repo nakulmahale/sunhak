@@ -65,6 +65,9 @@ class BlackboardState(TypedDict):
     agent_scores: Annotated[dict, merge_dicts]
     """Relevance scores per agent for the current turn: {country_code: float}."""
 
+    participants: Annotated[list, replace_value]
+    """Active country agents participating in this debate session."""
+
     active_speaker: Annotated[str, replace_value]
     """Country code of the agent currently speaking."""
 
@@ -140,6 +143,7 @@ def create_initial_state() -> dict:
         "headline_timestamp": "",
         "messages": [],
         "agent_scores": {},
+        "participants": [],
         "active_speaker": "",
         "speaker_reasoning": "",
         "rag_citations": [],

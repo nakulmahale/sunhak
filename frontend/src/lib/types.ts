@@ -152,6 +152,7 @@ export interface HeadlineEvent {
   data: {
     headline: string;
     source: string;
+    sourceUrl?: string;
     summary: string;
     timestamp: string;
   };
@@ -218,6 +219,7 @@ export interface DebateSession {
   status: "idle" | "active" | "consensus" | "deadlock" | "halted";
   turnCount: number;
   afterActionReport: string | null;
+  participants: CountryCode[];
 }
 
 export const createInitialSession = (): DebateSession => ({
@@ -233,4 +235,5 @@ export const createInitialSession = (): DebateSession => ({
   status: "idle",
   turnCount: 0,
   afterActionReport: null,
+  participants: [...COUNTRY_CODES],
 });

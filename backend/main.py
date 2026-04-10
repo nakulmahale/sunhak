@@ -61,47 +61,53 @@ manager = ConnectionManager()
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     """Startup and shutdown events."""
-    print("\n" + "=" * 60)
-    print("  PROJECT EMERGENCE -- Geopolitical Debate Sandbox")
-    print("=" * 60)
+    print("\n" + "=" * 60, flush=True)
+    print("  PROJECT EMERGENCE -- Geopolitical Debate Sandbox", flush=True)
+    print("=" * 60, flush=True)
 
     config_valid = validate_config()
     if not config_valid:
-        print("\n[!] Server starting with configuration warnings.")
-        print("    Some features may not work until config is fixed.\n")
+        print("\n[!] Server starting with configuration warnings.", flush=True)
+        print("    Some features may not work until config is fixed.\n", flush=True)
 
     # Load agent profiles on startup
     profiles = load_all_profiles()
     app.state.agent_profiles = profiles
-    print(f"[OK] Loaded {len(profiles)} country agent profiles")
+    print(f"[OK] Loaded {len(profiles)} country agent profiles", flush=True)
 
     for code, profile in profiles.items():
         flag = profile.get("flag_emoji", "")
         name = profile.get("country_name", code)
-        print(f"   {flag}  {name} ({code.upper()})")
+        print(f"   {flag}  {name} ({code.upper()})", flush=True)
 
     # Initialize ChromaDB and seed if needed
     try:
-        store = get_vector_store()
-        stats = store.get_collection_stats()
+        # Chroma + local embedding init can take a while on first run.
+        # Make it visible and avoid a silent "hang".
+        print("[>>] Initializing ChromaDB (RAG) ...", flush=True)
+        store = await asyncio.wait_for(asyncio.to_thread(get_vector_store), timeout=20.0)
+        stats = await asyncio.to_thread(store.get_collection_stats)
         app.state.vector_store = store
-        print(f"[OK] ChromaDB connected: {stats['historical_events']} historical events")
+        print(f"[OK] ChromaDB connected: {stats['historical_events']} historical events", flush=True)
         if stats['historical_events'] == 0:
-            print("[>>] No historical data found. Seeding database...")
-            seed_database()
-            stats = store.get_collection_stats()
-            print(f"[OK] ChromaDB seeded: {stats['historical_events']} events")
+            print("[>>] No historical data found. Seeding database...", flush=True)
+            await asyncio.to_thread(seed_database)
+            stats = await asyncio.to_thread(store.get_collection_stats)
+            print(f"[OK] ChromaDB seeded: {stats['historical_events']} events", flush=True)
+    except asyncio.TimeoutError:
+        print("[WARN] ChromaDB init timed out after 20s; starting without RAG.", flush=True)
+        print("       API will work; RAG endpoints may fail until Chroma is ready.", flush=True)
     except Exception as e:
-        print(f"[WARN] ChromaDB init failed: {e}")
-        print("       RAG features will be unavailable.")
+        print(f"[WARN] ChromaDB init failed: {e}", flush=True)
+        print("       RAG features will be unavailable.", flush=True)
 
-    print(f"\n[>>] Server ready at http://{HOST}:{PORT}")
-    print(f"[WS] WebSocket endpoint: ws://{HOST}:{PORT}/ws/debate")
-    print("=" * 60 + "\n")
+    print(f"\n[>>] Server ready at http://{HOST}:{PORT}", flush=True)
+    print(f"[WS] WebSocket endpoint: ws://{HOST}:{PORT}/ws/debate", flush=True)
+    print("=" * 60 + "\n", flush=True)
 
     yield  # App is running
 
-    print("\n[STOP] Shutting down Project EMERGENCE...")
+    print("\n[STOP] Shutting down Project EMERGENCE...", flush=True)
 
 
 # -- FastAPI App ------------------------------------------------
@@ -289,7 +295,8 @@ async def run_debate(websocket: WebSocket):
                 new_events = node_output.get("event_log", [])
                 for event in new_events:
                     try:
-                        await websocket.send_json(event)
+                        # Broadcast once to all clients (including the initiator).
+                        # Sending both direct + broadcast causes duplicated messages in the UI.
                         await manager.broadcast(event)
                     except Exception as e:
                         print(f"[WS] Event send failed: {e}")
@@ -315,4 +322,5 @@ async def run_debate(websocket: WebSocket):
 # -- Run Server -------------------------------------------------
 if __name__ == "__main__":
     import uvicorn
-    uvicorn.run("main:app", host=HOST, port=PORT, reload=False)
+    # Run the already-imported app instance (avoids re-importing main.py via "main:app").
+    uvicorn.run(app, host=HOST, port=PORT, reload=False, log_level="info", access_log=True)

@@ -70,7 +70,8 @@ class VectorStore:
         self.historical = self.client.get_or_create_collection(
             name=self.HISTORICAL_COLLECTION,
             embedding_function=self.embedding_fn,
-            metadata={"description": "Historical geopolitical events, treaties, and conflicts"}
+            metadata={
+                "description": "Historical geopolitical events, treaties, and conflicts"}
         )
 
         self.debate_memory = self.client.get_or_create_collection(

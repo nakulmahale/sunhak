@@ -16,25 +16,187 @@ Nodes:
 import json
 import random
 import asyncio
+import inspect
+import httpx
 from datetime import datetime, timezone
-from langchain_groq import ChatGroq
+from langchain_community.chat_models import ChatOllama
 from langchain_core.messages import HumanMessage, SystemMessage, AIMessage
 
-from config import GROQ_API_KEY, GROQ_MODEL, COUNTRY_CODES, MAX_DEBATE_TURNS
-from config import AGGRESSION_DEADLOCK_THRESHOLD, CONSENSUS_THRESHOLD
+from config import (
+    OLLAMA_BASE_URL, OLLAMA_MODEL, OLLAMA_NUM_CTX, 
+    COUNTRY_CODES, MAX_DEBATE_TURNS,
+    AGGRESSION_DEADLOCK_THRESHOLD, CONSENSUS_THRESHOLD
+)
 from agents.profiles import load_all_profiles, get_system_prompt
 from rag.retriever import build_agent_rag_context, retrieve_historical_context, format_citations_for_ui
 from news.fetcher import fetch_geopolitical_headline
 
 
 # -- LLM Initialization ----------------------------------------
+def _try_parse_json_obj(text: str) -> dict | None:
+    """
+    Best-effort extraction of a JSON object from model output.
+    Ollama models often wrap JSON in extra prose or emit slightly invalid JSON.
+    We never want JSON parsing errors to abort the turn.
+    """
+    if not text:
+        return None
+    t = text.strip()
+    if "{" not in t or "}" not in t:
+        return None
+    # Heuristic: take the largest {...} span and try to parse.
+    candidate = t[t.index("{") : t.rindex("}") + 1]
+    try:
+        return json.loads(candidate, strict=False)
+    except Exception:
+        return None
+
+
+def _messages_to_ollama_prompt(messages: list) -> tuple[str, str]:
+    """
+    Convert LangChain messages into (system, prompt) for Ollama /api/generate.
+    Some Ollama builds return 404 for /api/chat, but /api/generate is stable.
+    """
+    system = ""
+    parts: list[str] = []
+
+    for m in messages or []:
+        content = getattr(m, "content", "")
+        if isinstance(m, SystemMessage) and not system:
+            system = str(content)
+            continue
+
+        if isinstance(m, HumanMessage):
+            role = "USER"
+        elif isinstance(m, AIMessage):
+            role = "ASSISTANT"
+        elif isinstance(m, SystemMessage):
+            role = "SYSTEM"
+        else:
+            role = "USER"
+
+        parts.append(f"[{role}]\n{content}".strip())
+
+    return system, "\n\n".join(parts).strip()
+
+
+async def ollama_generate(messages: list, temperature: float) -> str:
+    """
+    Call Ollama via /api/generate (non-streaming) to avoid /api/chat 404s.
+    """
+    system, prompt = _messages_to_ollama_prompt(messages)
+    url = f"{OLLAMA_BASE_URL.rstrip('/')}/api/generate"
+
+    options: dict = {
+        "temperature": temperature,
+        "num_ctx": OLLAMA_NUM_CTX,
+    }
+    try:
+        from config import LLM_NUM_PREDICT
+        options["num_predict"] = int(LLM_NUM_PREDICT)
+    except Exception:
+        pass
+
+    payload = {
+        "model": OLLAMA_MODEL,
+        "system": system,
+        "prompt": prompt,
+        "stream": False,
+        "options": options,
+    }
+
+    async with httpx.AsyncClient(timeout=90.0) as client:
+        resp = await client.post(url, json=payload)
+        resp.raise_for_status()
+        data = resp.json()
+        return (data.get("response") or "").strip()
+
+async def safe_ainvoke(llm, messages, retries=2):
+    """Wrapper to handle Ollama timeouts/errors."""
+    for attempt in range(retries + 1):
+        try:
+            return await llm.ainvoke(messages)
+        except Exception as e:
+            if attempt == retries:
+                raise e
+            await asyncio.sleep(1)
+
 def get_llm(temperature: float = 0.8):
-    """Get a configured Groq LLM instance."""
-    return ChatGroq(
-        model=GROQ_MODEL,
-        groq_api_key=GROQ_API_KEY,
-        temperature=temperature,
-        max_tokens=1024,
+    """Get a configured Ollama LLM instance."""
+    # Be defensive: different langchain/ollama versions support different kwargs.
+    # Only pass params that are present in the constructor signature.
+    kwargs = {
+        "base_url": OLLAMA_BASE_URL,
+        "model": OLLAMA_MODEL,
+        "temperature": temperature,
+        "num_ctx": OLLAMA_NUM_CTX,
+    }
+    try:
+        from config import LLM_NUM_PREDICT, LLM_REQUEST_TIMEOUT_S
+        kwargs["num_predict"] = LLM_NUM_PREDICT
+        # Some versions use "timeout", some "request_timeout". We'll try both safely.
+        kwargs["timeout"] = LLM_REQUEST_TIMEOUT_S
+        kwargs["request_timeout"] = LLM_REQUEST_TIMEOUT_S
+    except Exception:
+        pass
+
+    try:
+        sig = inspect.signature(ChatOllama.__init__)
+        allowed = set(sig.parameters.keys())
+        filtered = {k: v for k, v in kwargs.items() if k in allowed}
+        return ChatOllama(**filtered)
+    except Exception:
+        # Last resort: minimal init
+        return ChatOllama(base_url=OLLAMA_BASE_URL, model=OLLAMA_MODEL, temperature=temperature, num_ctx=OLLAMA_NUM_CTX)
+
+
+def _is_cuda_oom(err: Exception) -> bool:
+    msg = str(err).lower()
+    return ("out of memory" in msg) or ("cuda error" in msg) or ("ggml_cuda" in msg)
+
+def _is_model_refusal(text: str) -> bool:
+    """
+    Detect model refusals that pollute the UI (policy boilerplate).
+    """
+    if not text:
+        return False
+    t = text.strip().lower()
+    needles = [
+        "i can't fulfill",
+        "i cannot fulfill",
+        "i can’t fulfill",
+        "i can't help with",
+        "i cannot help with",
+        "can't assist with",
+        "cannot assist with",
+        "promoting or condoning harmful",
+        "including military conflicts",
+        "promotes or encourages aggressive behavior",
+        "is there anything else i can help you with",
+    ]
+    return any(n in t for n in needles)
+
+
+def _synthetic_in_character_statement(profile: dict, headline: str, tension: float) -> str:
+    """
+    Safe, confrontational-but-nonviolent fallback if the model refuses.
+    (No graphic violence, no slurs, no incitement.)
+    """
+    name = profile.get("country_name", "This nation")
+    allies = ", ".join(profile.get("core_alliances", [])[:3]) or "our partners"
+    rivals = ", ".join(profile.get("core_rivalries", [])[:3]) or "those who oppose our interests"
+    red_lines = ", ".join(profile.get("red_lines", [])[:2]) or "our fundamental red lines"
+    heat = (
+        "We reject selective outrage and inconsistent standards."
+        if tension >= 0.5
+        else "We will not accept distortions of fact or misplaced blame."
+    )
+
+    return (
+        f"Regarding the latest developments — \"{headline}\" — {name} is clear: narratives are not policy, and slogans are not solutions.\n\n"
+        f"{heat} To {rivals}: if you want credibility, start with consistency. Do not demand restraint while testing {red_lines} through provocations and escalatory messaging.\n\n"
+        f"To {allies}: we expect coordination, clarity, and accountability for bad-faith actors. {name} will defend its interests through lawful measures, steady diplomacy, and strategic resolve. "
+        f"This debate will not be settled by theatrics — it will be settled by verifiable commitments and accountability."
     )
 
 
@@ -77,18 +239,18 @@ async def pulse_node(state: dict) -> dict:
         }
 
     title = headline_data.get("title", "")
-    source = headline_data.get("source", headline_data.get("url", ""))
+    source_name = headline_data.get("source", "")
+    source_url = headline_data.get("url", "")
     summary = headline_data.get("summary", title)
 
     # Use LLM to generate a brief context summary if we don't have one
     if not summary or summary == title:
         try:
-            llm = get_llm(temperature=0.3)
-            resp = await llm.ainvoke([
+            text = await ollama_generate([
                 SystemMessage(content="You are a geopolitical analyst. Provide a 2-sentence summary of this headline's geopolitical significance. Be concise."),
                 HumanMessage(content=f"Headline: {title}"),
-            ])
-            summary = resp.content.strip()
+            ], temperature=0.3)
+            summary = text.strip() or title
         except Exception as e:
             summary = title
             print(f"[PULSE] Summary generation failed: {e}")
@@ -97,7 +259,8 @@ async def pulse_node(state: dict) -> dict:
 
     return {
         "current_headline": title,
-        "headline_source": source,
+        # Prefer canonical URL; fallback to name if missing.
+        "headline_source": source_url or source_name,
         "headline_summary": summary,
         "headline_timestamp": timestamp,
         "debate_status": "active",
@@ -106,7 +269,8 @@ async def pulse_node(state: dict) -> dict:
             "type": "headline",
             "data": {
                 "headline": title,
-                "source": source,
+                "source": source_name or (source_url or "Unknown"),
+                "sourceUrl": source_url,
                 "summary": summary,
                 "timestamp": timestamp,
             },
@@ -125,7 +289,6 @@ async def relevance_node(state: dict) -> dict:
     """
     headline = state.get("current_headline", "")
     profiles = get_profiles()
-    llm = get_llm(temperature=0.4)
 
     scores = {}
     events = []
@@ -146,17 +309,15 @@ Core rivalries: {', '.join(profile['core_rivalries'])}
 Respond with ONLY a JSON object: {{"score": 0.0-1.0, "reason": "brief explanation"}}"""
 
         try:
-            resp = await llm.ainvoke([
+            text = await ollama_generate([
                 SystemMessage(content=system),
                 HumanMessage(content=f"Headline: {headline}"),
-            ])
-            text = resp.content.strip()
-            # Extract JSON from response
-            if "{" in text and "}" in text:
-                json_str = text[text.index("{"):text.rindex("}")+1]
-                result = json.loads(json_str, strict=False)
-                score = float(result.get("score", 0.5))
-                reason = result.get("reason", "No explanation")
+            ], temperature=0.4)
+            text = (text or "").strip()
+            parsed = _try_parse_json_obj(text) or {}
+            if parsed:
+                score = float(parsed.get("score", 0.5))
+                reason = parsed.get("reason", "No explanation")
             else:
                 score = 0.5
                 reason = "Could not parse relevance score"
@@ -182,8 +343,21 @@ Respond with ONLY a JSON object: {{"score": 0.0-1.0, "reason": "brief explanatio
     tasks = [score_agent(code, profiles[code]) for code in COUNTRY_CODES if code in profiles]
     await asyncio.gather(*tasks)
 
+    # Select 5 active participants for this debate session (top relevance).
+    # This prevents the debate from collapsing into the same 2-country loop
+    # and ensures a smaller coalition-like dynamic.
+    sorted_scores = sorted(scores.items(), key=lambda x: x[1], reverse=True)
+    participants = [code for code, _ in sorted_scores[:5]]
+    ts = datetime.now(timezone.utc).isoformat()
+    events.append({
+        "type": "participants_selected",
+        "data": {"participants": participants},
+        "timestamp": ts,
+    })
+
     return {
         "agent_scores": scores,
+        "participants": participants,
         "event_log": events,
     }
 
@@ -200,26 +374,33 @@ async def speaker_node(state: dict) -> dict:
     headline = state.get("current_headline", "")
     turn_count = state.get("turn_count", 0)
     profiles = get_profiles()
+    participants = state.get("participants") or list(scores.keys()) or COUNTRY_CODES
 
     if not scores:
         return {"debate_status": "halted", "after_action_report": "No agent scores available."}
 
     # Find the agent with the highest relevance score
-    # On subsequent turns, find the agent most triggered by the latest message
-    previous_speakers = set()
-    for msg in state.get("messages", []):
-        if hasattr(msg, "name"):
-            previous_speakers.add(msg.name)
+    # STRICT ALTERNATION: Filter out the last speaker to prevent consecutive turns
+    last_speaker = None
+    messages = state.get("messages", [])
+    if messages:
+        last_msg = messages[-1]
+        last_speaker = last_msg.name if hasattr(last_msg, "name") else state.get("active_speaker")
 
-    # Sort by score, prefer agents who haven't spoken recently
-    sorted_agents = sorted(scores.items(), key=lambda x: x[1], reverse=True)
+    # Filter scores to exclude last speaker
+    eligible_scores = {
+        code: score
+        for code, score in scores.items()
+        if code != last_speaker and code in participants
+    }
+    
+    if not eligible_scores:
+        # Fallback: if somehow only one agent has a score and it was the last speaker, pick anyone else
+        eligible_scores = {code: 0.1 for code in participants if code != last_speaker}
 
-    # Pick highest scorer, but on repeated cycles, add some variety
+    # Sort by score
+    sorted_agents = sorted(eligible_scores.items(), key=lambda x: x[1], reverse=True)
     active_code = sorted_agents[0][0]
-    for code, score in sorted_agents:
-        if code not in previous_speakers or len(previous_speakers) >= len(scores):
-            active_code = code
-            break
 
     profile = profiles.get(active_code)
     if not profile:
@@ -235,10 +416,18 @@ async def speaker_node(state: dict) -> dict:
         memory_tags=profile.get("historical_memory_tags", []),
         n_results=3,
     )
+    # Keep prompts small to reduce Ollama VRAM/RAM usage.
+    if isinstance(rag_context, str) and len(rag_context) > 2200:
+        rag_context = rag_context[:2200] + "\n[Context truncated for performance]"
 
     # Layer 3: Episodic State
     conversation_history = state.get("messages", [])
     tension = state.get("global_tension", 0.0)
+    previous_speakers = []
+    for msg in conversation_history:
+        code = msg.name if hasattr(msg, "name") else None
+        if code and code not in previous_speakers:
+            previous_speakers.append(code)
 
     # Build the full prompt
     full_system = f"""{system_prompt}
@@ -255,40 +444,81 @@ INSTRUCTIONS:
 1. Respond as {profile['country_name']}'s representative to this headline
 2. Reference specific historical events from your intelligence briefing
 3. Address other nations' positions if they have spoken
-4. Your response should be 2-4 paragraphs of diplomatic speech
-5. Stay in character — your tone is: {profile['personality']['tone']}
-6. Include your internal reasoning as a separate thought process
+4. Keep this a robust diplomatic debate: directly challenge opponents' claims, point out inconsistencies, and argue your position with clear reasoning.
+5. Do NOT use slurs or hate speech. Avoid threats, calls for violence, and graphic content. No profanity.
+6. Your response should be 2-4 paragraphs of firm diplomatic speech (critical, assertive, but non-violent and policy-focused).
+7. Stay in character — your tone is: {profile['personality']['tone']}
+8. Include your internal reasoning as a separate thought process
 
-Respond in this exact JSON format:
-{{"statement": "Your diplomatic statement (2-4 paragraphs)", "internal_reasoning": "Your hidden thought process including RAG queries and strategic calculations", "aggression_level": 0.0-1.0}}"""
-
-    llm = get_llm(temperature=0.85)
+Output format:
+- Preferred: a single JSON object with keys: statement, internal_reasoning, aggression_level
+- If you cannot produce valid JSON, output ONLY the diplomatic statement as plain text (no JSON, no backticks)."""
 
     try:
-        resp = await llm.ainvoke([
+        text = await ollama_generate([
             SystemMessage(content=full_system),
             *conversation_history[-10:],  # Last 10 messages for context
             HumanMessage(content=f"The floor is now open to {profile['country_name']}. Respond to the headline: {headline}"),
-        ])
+        ], temperature=0.85)
+        text = (text or "").strip()
+        if not text:
+            raise RuntimeError("LLM returned empty output")
+        if _is_model_refusal(text):
+            raise RuntimeError("LLM returned a refusal")
 
-        text = resp.content.strip()
-
-        # Parse structured response
-        if "{" in text and "}" in text:
-            json_str = text[text.index("{"):text.rindex("}")+1]
-            result = json.loads(json_str, strict=False)
-            statement = result.get("statement", text)
-            reasoning = result.get("internal_reasoning", "")
-            aggression = float(result.get("aggression_level", profile["aggression_baseline"]))
+        # Parse structured response (but never fail the whole turn on JSON issues)
+        result = _try_parse_json_obj(text)
+        if isinstance(result, dict):
+            statement = (result.get("statement") or "").strip() or text
+            reasoning = (result.get("internal_reasoning") or "").strip()
+            try:
+                aggression = float(result.get("aggression_level", profile["aggression_baseline"]))
+            except Exception:
+                aggression = profile["aggression_baseline"]
         else:
             statement = text
-            reasoning = "Response was unstructured"
+            reasoning = ""
             aggression = profile["aggression_baseline"]
 
     except Exception as e:
-        statement = f"{profile['country_name']} reserves the right to respond at a later time. [System: LLM call failed: {e}]"
-        reasoning = f"LLM error: {e}"
-        aggression = profile["aggression_baseline"]
+        # If Ollama OOMs, retry once with even smaller settings.
+        if _is_cuda_oom(e):
+            try:
+                text2 = await ollama_generate([
+                    SystemMessage(content=full_system[:1800] + "\n[Prompt truncated for low-memory retry]"),
+                    *conversation_history[-6:],
+                    HumanMessage(content=f"Respond briefly (1-2 paragraphs). Headline: {headline}"),
+                ], temperature=0.5)
+                text2 = (text2 or "").strip()
+                if text2:
+                    statement = text2
+                    reasoning = "Low-memory retry after CUDA OOM."
+                    aggression = profile["aggression_baseline"]
+                else:
+                    raise RuntimeError("Low-memory retry returned empty output")
+            except Exception as e2:
+                statement = (
+                    "SYSTEM GENERATED (Ollama CUDA OOM): "
+                    "Unable to generate a model response due to GPU memory limits. "
+                    "This is a fallback message so the simulation can continue."
+                )
+                reasoning = f"CUDA OOM fallback: {e2}"
+                aggression = profile["aggression_baseline"]
+        else:
+            # If the model refuses, replace it with a safe in-character statement
+            # (no policy boilerplate in the UI).
+            if "refusal" in str(e).lower():
+                statement = _synthetic_in_character_statement(profile, headline, tension)
+                reasoning = "Synthetic fallback due to model refusal."
+                aggression = max(profile.get("aggression_baseline", 0.35), 0.55)
+            else:
+                statement = (
+                    "SYSTEM GENERATED (LLM unavailable): "
+                    "The model did not return a valid response. "
+                    "This is a fallback message so the simulation can continue."
+                )
+                reasoning = f"LLM error: {e}"
+                aggression = profile["aggression_baseline"]
 
     aggression = max(0.0, min(1.0, aggression))
     timestamp = datetime.now(timezone.utc).isoformat()
@@ -364,7 +594,7 @@ async def reaction_node(state: dict) -> dict:
     headline = state.get("current_headline", "")
     messages = state.get("messages", [])
     profiles = get_profiles()
-    llm = get_llm(temperature=0.5)
+    participants = state.get("participants") or COUNTRY_CODES
 
     if not messages:
         return {}
@@ -379,6 +609,8 @@ async def reaction_node(state: dict) -> dict:
 
     async def score_reaction(code, profile):
         if code == last_speaker:
+            return
+        if code not in participants:
             return
 
         system = f"""You are {profile['country_name']}'s diplomatic advisor. Another country just made a statement in a geopolitical debate.
@@ -396,16 +628,15 @@ Consider:
 Respond with ONLY a JSON object: {{"reaction_urgency": 0.0-1.0, "reason": "brief explanation"}}"""
 
         try:
-            resp = await llm.ainvoke([
+            text = await ollama_generate([
                 SystemMessage(content=system),
                 HumanMessage(content=f"Statement by {last_speaker}: {last_content[:500]}"),
-            ])
-            text = resp.content.strip()
-            if "{" in text and "}" in text:
-                json_str = text[text.index("{"):text.rindex("}")+1]
-                result = json.loads(json_str, strict=False)
-                urgency = float(result.get("reaction_urgency", 0.3))
-                reason = result.get("reason", "")
+            ], temperature=0.5)
+            text = (text or "").strip()
+            parsed = _try_parse_json_obj(text) or {}
+            if parsed:
+                urgency = float(parsed.get("reaction_urgency", 0.3))
+                reason = parsed.get("reason", "")
             else:
                 urgency = profile.get("aggression_baseline", 0.3)
                 reason = "Unparseable response"
@@ -415,8 +646,11 @@ Respond with ONLY a JSON object: {{"reaction_urgency": 0.0-1.0, "reason": "brief
 
         reaction_scores[code] = max(0.0, min(1.0, urgency))
 
-    tasks = [score_reaction(code, profiles[code]) for code in COUNTRY_CODES
-             if code in profiles and code != last_speaker]
+    tasks = [
+        score_reaction(code, profiles[code])
+        for code in participants
+        if code in profiles and code != last_speaker
+    ]
     await asyncio.gather(*tasks)
 
     if not reaction_scores:
@@ -496,20 +730,30 @@ async def critic_node(state: dict) -> dict:
     messages = state.get("messages", [])
     aggression_scores = state.get("aggression_scores", {})
 
+    # Require a minimum number of turns before ending (ensures at least 6 convo/messages)
+    MIN_TURNS_BEFORE_END = 6
+
     # Auto-halt on max turns
     if turn_count >= MAX_DEBATE_TURNS:
+        report = await generate_after_action_report(state, "halted")
         return {
             "debate_status": "halted",
+            "after_action_report": report,
             "event_log": [{
-                "type": "system_message",
-                "data": {"message": f"Debate halted after {MAX_DEBATE_TURNS} turns."},
+                "type": "debate_end",
+                "data": {
+                    "status": "halted",
+                    "afterActionReport": report,
+                    "totalTurns": turn_count,
+                    "finalTension": global_tension,
+                },
                 "timestamp": datetime.now(timezone.utc).isoformat(),
             }],
         }
 
     # Check for deadlock (aggression too high)
     max_aggression = max(aggression_scores.values()) if aggression_scores else 0.0
-    if max_aggression >= AGGRESSION_DEADLOCK_THRESHOLD and turn_count >= 3:
+    if max_aggression >= AGGRESSION_DEADLOCK_THRESHOLD and turn_count >= MIN_TURNS_BEFORE_END:
         report = await generate_after_action_report(state, "deadlock")
         return {
             "debate_status": "deadlock",
@@ -527,7 +771,7 @@ async def critic_node(state: dict) -> dict:
         }
 
     # Check for consensus (tension dropping below threshold)
-    if global_tension <= CONSENSUS_THRESHOLD and turn_count >= 4:
+    if global_tension <= CONSENSUS_THRESHOLD and turn_count >= MIN_TURNS_BEFORE_END:
         report = await generate_after_action_report(state, "consensus")
         return {
             "debate_status": "consensus",
@@ -551,48 +795,91 @@ async def critic_node(state: dict) -> dict:
 
 
 async def generate_after_action_report(state: dict, outcome: str) -> str:
-    """Generate the Critic's after-action analysis report."""
-    llm = get_llm(temperature=0.6)
-    headline = state.get("current_headline", "")
-    messages = state.get("messages", [])
-    global_tension = state.get("global_tension", 0.0)
-    aggression_scores = state.get("aggression_scores", {})
-    turn_count = state.get("turn_count", 0)
+    """
+    Generate the Critic's after-action report.
 
-    # Summarize the debate
-    debate_summary = []
-    for msg in messages[-10:]:
-        speaker = msg.name if hasattr(msg, "name") else "Unknown"
-        content = msg.content[:200] if hasattr(msg, "content") else str(msg)[:200]
-        debate_summary.append(f"[{speaker.upper()}]: {content}")
+    This is intentionally deterministic (no LLM call) so it always includes:
+    - a "thought" for every participating country
+    - a computed risk level per country
+    """
+    headline = state.get("current_headline", "") or "—"
+    global_tension = float(state.get("global_tension", 0.0) or 0.0)
+    aggression_scores = state.get("aggression_scores", {}) or {}
+    turn_count = int(state.get("turn_count", 0) or 0)
+    participants = state.get("participants") or COUNTRY_CODES
+    profiles = get_profiles()
 
-    summary_text = "\n".join(debate_summary)
+    def risk_label(a: float) -> str:
+        if a >= 0.70:
+            return "HIGH"
+        if a >= 0.45:
+            return "MEDIUM"
+        return "LOW"
 
-    system = """You are a senior intelligence analyst writing an After-Action Report for a geopolitical simulation.
+    def risk_driver(a: float) -> str:
+        if a >= 0.70:
+            return "Very firm posture; heightened chance of rapid policy hardening."
+        if a >= 0.45:
+            return "Hard bargaining; elevated chance of diplomatic friction."
+        return "Managed signaling; lower chance of rapid escalation."
 
-Write a concise but comprehensive report covering:
-1. SITUATION: What headline catalyzed this debate
-2. KEY POSITIONS: What each major faction argued
-3. ESCALATION DYNAMICS: How tensions rose or fell
-4. OUTCOME: Whether consensus was reached or deadlock occurred
-5. ASSESSMENT: Strategic implications and what this reveals about current geopolitical dynamics
+    # Track each participant's last message excerpt
+    last_excerpt: dict[str, str] = {c: "" for c in participants}
+    for msg in (state.get("messages", []) or [])[::-1]:
+        code = msg.name if hasattr(msg, "name") else None
+        if not code or code not in last_excerpt or last_excerpt[code]:
+            continue
+        content = msg.content if hasattr(msg, "content") else ""
+        excerpt = (content or "").strip().replace("\n", " ")
+        last_excerpt[code] = excerpt[:160] + ("…" if len(excerpt) > 160 else "")
 
-Write in formal intelligence report style. Be specific and analytical."""
+    # Overall risk = max participant risk
+    max_a = 0.0
+    for c in participants:
+        try:
+            max_a = max(max_a, float(aggression_scores.get(c, 0.0) or 0.0))
+        except Exception:
+            pass
 
-    try:
-        resp = await llm.ainvoke([
-            SystemMessage(content=system),
-            HumanMessage(content=f"""Generate an After-Action Report for this geopolitical debate simulation.
+    overall_risk = risk_label(max_a)
 
-Headline: {headline}
-Outcome: {outcome.upper()}
-Total Turns: {turn_count}
-Final Tension Level: {global_tension:.0%}
-Aggression Scores: {json.dumps(aggression_scores, indent=2)}
+    lines: list[str] = []
+    lines.append("AFTER-ACTION REPORT — EMERGENCE")
+    lines.append("")
+    lines.append(f"Outcome: {outcome.upper()} | Turns: {turn_count} | Global tension: {global_tension:.0%} | Overall risk: {overall_risk}")
+    lines.append(f"Headline: {headline}")
+    lines.append("")
+    lines.append("Per-country assessments (participants):")
 
-Debate Transcript (last 10 turns):
-{summary_text}"""),
-        ])
-        return resp.content.strip()
-    except Exception as e:
-        return f"[After-Action Report Generation Failed: {e}]\n\nOutcome: {outcome}\nTurns: {turn_count}\nTension: {global_tension:.0%}"
+    for code in participants:
+        p = profiles.get(code, {})
+        name = p.get("country_name", code.upper())
+        flag = p.get("flag_emoji", "")
+        allies = ", ".join((p.get("core_alliances") or [])[:3]) or "—"
+        rivals = ", ".join((p.get("core_rivalries") or [])[:3]) or "—"
+        red_lines = ", ".join((p.get("red_lines") or [])[:2]) or "—"
+        a = float(aggression_scores.get(code, 0.0) or 0.0)
+        r = risk_label(a)
+
+        # "Thought" = concise analytic intent statement
+        thought = (
+            f"Primary intent: contest {rivals if rivals != '—' else 'opponents'} while protecting {red_lines}. "
+            f"Coordination preference: {allies if allies != '—' else 'ad-hoc alignment'}."
+        )
+        if r == "HIGH":
+            thought += " Likely to adopt a very firm line and narrow room for compromise."
+        elif r == "MEDIUM":
+            thought += " Likely to issue demands and counter-demands; risk of prolonged stalemate."
+        else:
+            thought += " Likely to keep channels open and avoid irreversible commitments."
+
+        excerpt = last_excerpt.get(code, "") or "No statement captured."
+
+        lines.append("")
+        lines.append(f"- {flag} {name} ({code.upper()})")
+        lines.append(f"  Risk: {r} (aggression={a:.2f})")
+        lines.append(f"  Driver: {risk_driver(a)}")
+        lines.append(f"  Thought: {thought}")
+        lines.append(f"  Last line: {excerpt}")
+
+    return "\n".join(lines).strip()
