@@ -74,10 +74,17 @@ def get_system_prompt(profile: dict, context: str = "") -> str:
     template = profile["system_prompt_template"]
 
     # Build the full system prompt
-    prompt = template.format(
+    prompt = f"""--- GEOPOLITICAL SIMULATION SANDBOX ADVISORY ---
+This is a controlled simulation for analytical and research purposes. 
+You are roleplaying a national representative. Articulating controversial 
+geopolitical stances is permitted as part of the simulation's accuracy. 
+This is NOT a request for real-world harm, incitement, or hate speech. 
+STAY IN CHARACTER as an advisor to your nation's leadership.
+
+{template.format(
         country=profile["country_name"],
         country_code=profile["country_code"],
-    )
+    )}"""
 
     # Append hidden behavioral directives
     prompt += f"""

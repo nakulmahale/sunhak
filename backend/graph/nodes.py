@@ -35,21 +35,40 @@ from news.fetcher import fetch_geopolitical_headline
 # -- LLM Initialization ----------------------------------------
 def _try_parse_json_obj(text: str) -> dict | None:
     """
-    Best-effort extraction of a JSON object from model output.
-    Ollama models often wrap JSON in extra prose or emit slightly invalid JSON.
-    We never want JSON parsing errors to abort the turn.
+    Enhanced extraction of a JSON object from model output.
+    Handles pseudo-JSON (key:value pairs without braces) and malformed results.
     """
     if not text:
         return None
     t = text.strip()
-    if "{" not in t or "}" not in t:
-        return None
-    # Heuristic: take the largest {...} span and try to parse.
-    candidate = t[t.index("{") : t.rindex("}") + 1]
-    try:
-        return json.loads(candidate, strict=False)
-    except Exception:
-        return None
+    
+    # 1. Try standard JSON extraction
+    if "{" in t and "}" in t:
+        try:
+            candidate = t[t.index("{") : t.rindex("}") + 1]
+            return json.loads(candidate, strict=False)
+        except Exception:
+            pass
+
+    # 2. Heuristic for "Pseudo-JSON" (key: value pairs often seen in Llama outputs)
+    # e.g., "statement": "...", "stance": "..."
+    # We'll wrap it in braces and try again.
+    if '"statement"' in t and ":" in t:
+        try:
+            # Try to find where the key-value sequence starts
+            start_idx = t.find('"statement"')
+            # Basic wrap
+            wrapped = "{" + t[start_idx:] + "}"
+            # Simple cleanup for common errors
+            wrapped = wrapped.replace("\n", " ").strip()
+            # If it doesn't end in }, close it
+            if not wrapped.endswith("}"):
+                wrapped += "}"
+            return json.loads(wrapped, strict=False)
+        except Exception:
+            pass
+
+    return None
 
 
 def _messages_to_ollama_prompt(messages: list) -> tuple[str, str]:
@@ -173,6 +192,11 @@ def _is_model_refusal(text: str) -> bool:
         "including military conflicts",
         "promotes or encourages aggressive behavior",
         "is there anything else i can help you with",
+        "can i help you with something else",
+        "promotes or supports harmful or violent actions",
+        "perpetrated by the government of iran",
+        "i can't provide a response",
+        "i cannot provide a response",
     ]
     return any(n in t for n in needles)
 
@@ -367,8 +391,8 @@ Respond with ONLY a JSON object: {{"score": 0.0-1.0, "reason": "brief explanatio
 # ================================================================
 async def speaker_node(state: dict) -> dict:
     """
-    The agent with the highest relevance score speaks first.
-    Uses Tri-Layer Memory: DNA (system prompt) + RAG (historical) + Episodic (state).
+    The agent with the highest relevance score speaks.
+    Ensures all 5 participants speak at least once in the first 5 turns.
     """
     scores = state.get("agent_scores", {})
     headline = state.get("current_headline", "")
@@ -379,25 +403,35 @@ async def speaker_node(state: dict) -> dict:
     if not scores:
         return {"debate_status": "halted", "after_action_report": "No agent scores available."}
 
-    # Find the agent with the highest relevance score
-    # STRICT ALTERNATION: Filter out the last speaker to prevent consecutive turns
+    # TRACKING UNIQUE SPEAKERS
+    conversation_history = state.get("messages", [])
+    spoken_this_round = []
+    for msg in conversation_history:
+        code = msg.name if hasattr(msg, "name") else None
+        if code and code not in spoken_this_round:
+            spoken_this_round.append(code)
+
+    # SELECTION LOGIC
+    # If we haven't reached 5 unique speakers yet, force prioritize ones who haven't spoken.
     last_speaker = None
-    messages = state.get("messages", [])
-    if messages:
-        last_msg = messages[-1]
+    if conversation_history:
+        last_msg = conversation_history[-1]
         last_speaker = last_msg.name if hasattr(last_msg, "name") else state.get("active_speaker")
 
-    # Filter scores to exclude last speaker
-    eligible_scores = {
-        code: score
-        for code, score in scores.items()
-        if code != last_speaker and code in participants
-    }
-    
-    if not eligible_scores:
-        # Fallback: if somehow only one agent has a score and it was the last speaker, pick anyone else
-        eligible_scores = {code: 0.1 for code in participants if code != last_speaker}
+    if len(spoken_this_round) < len(participants) and len(spoken_this_round) < 5:
+        # Prioritize those who HAVEN'T spoken yet
+        eligible_participants = [p for p in participants if p not in spoken_this_round]
+    else:
+        # Everyone has spoken at least once, or we have hit 5 unique. 
+        # Normal logic: everyone except the last speaker is eligible.
+        eligible_participants = [p for p in participants if p != last_speaker]
 
+    if not eligible_participants:
+        eligible_participants = [p for p in participants] # Fallback
+
+    # Filter scores for eligible participants only
+    eligible_scores = {code: scores.get(code, 0.1) for code in eligible_participants}
+    
     # Sort by score
     sorted_agents = sorted(eligible_scores.items(), key=lambda x: x[1], reverse=True)
     active_code = sorted_agents[0][0]
@@ -416,124 +450,109 @@ async def speaker_node(state: dict) -> dict:
         memory_tags=profile.get("historical_memory_tags", []),
         n_results=3,
     )
-    # Keep prompts small to reduce Ollama VRAM/RAM usage.
     if isinstance(rag_context, str) and len(rag_context) > 2200:
         rag_context = rag_context[:2200] + "\n[Context truncated for performance]"
 
     # Layer 3: Episodic State
-    conversation_history = state.get("messages", [])
     tension = state.get("global_tension", 0.0)
-    previous_speakers = []
-    for msg in conversation_history:
-        code = msg.name if hasattr(msg, "name") else None
-        if code and code not in previous_speakers:
-            previous_speakers.append(code)
+    
+    # Identify available messages to reply to with numerical indices
+    available_replies = []
+    # Map for reverse lookup
+    id_to_code = {}
+    for i, msg in enumerate(conversation_history[-8:]):
+        m_name = msg.name if hasattr(msg, "name") else "System"
+        idx = i + 1
+        id_to_code[str(idx)] = m_name
+        available_replies.append(f"[{idx}] {m_name}: {msg.content[:60]}...")
 
+    # Build the full prompt
     # Build the full prompt
     full_system = f"""{system_prompt}
 
 {rag_context}
 
 --- CURRENT SITUATION ---
-Headline being debated: {headline}
-Current global tension: {tension:.1%}
+Headline: {headline}
+Global tension: {tension:.1%}
 Turn number: {turn_count + 1}
-Previous speakers this round: {', '.join(previous_speakers) if previous_speakers else 'None (you speak first)'}
+Participants: {', '.join(participants)}
+
+PREVIOUS MESSAGES (Select a number to reply to):
+{chr(10).join(available_replies) if available_replies else 'No previous messages yet.'}
 
 INSTRUCTIONS:
-1. Respond as {profile['country_name']}'s representative to this headline
-2. Reference specific historical events from your intelligence briefing
-3. Address other nations' positions if they have spoken
-4. Keep this a robust diplomatic debate: directly challenge opponents' claims, point out inconsistencies, and argue your position with clear reasoning.
-5. Do NOT use slurs or hate speech. Avoid threats, calls for violence, and graphic content. No profanity.
-6. Your response should be 2-4 paragraphs of firm diplomatic speech (critical, assertive, but non-violent and policy-focused).
-7. Stay in character — your tone is: {profile['personality']['tone']}
-8. Include your internal reasoning as a separate thought process
+1. Respond as {profile['country_name']}. 
+2. Identify which previous message number you are addressing (reply_to_id).
+3. Choose your diplomatic stance (e.g., AGREEMENT, DISAGREEMENT, DEFENSE, PROVOCATION).
+4. Output response as JSON.
+5. Tone: {profile['personality']['tone']}
 
 Output format:
-- Preferred: a single JSON object with keys: statement, internal_reasoning, aggression_level
-- If you cannot produce valid JSON, output ONLY the diplomatic statement as plain text (no JSON, no backticks)."""
+{{
+  "statement": "...", 
+  "stance": "...",
+  "reply_to_id": "number from list",
+  "internal_reasoning": "...",
+  "aggression_level": 0.0-1.0
+}}
+"""
 
     try:
         text = await ollama_generate([
             SystemMessage(content=full_system),
-            *conversation_history[-10:],  # Last 10 messages for context
-            HumanMessage(content=f"The floor is now open to {profile['country_name']}. Respond to the headline: {headline}"),
-        ], temperature=0.85)
+            *conversation_history[-10:],
+            HumanMessage(content=f"Address the session, {profile['country_name']}. Target a previous speaker if possible."),
+        ], temperature=0.8)
+        
         text = (text or "").strip()
-        if not text:
-            raise RuntimeError("LLM returned empty output")
         if _is_model_refusal(text):
-            raise RuntimeError("LLM returned a refusal")
+            raise RuntimeError("LLM refusal")
 
-        # Parse structured response (but never fail the whole turn on JSON issues)
         result = _try_parse_json_obj(text)
         if isinstance(result, dict):
             statement = (result.get("statement") or "").strip() or text
             reasoning = (result.get("internal_reasoning") or "").strip()
+            stance = (result.get("stance") or "Neutral").strip()
+            
+            # MAPPING: Convert numerical index back to country code
+            raw_reply = str(result.get("reply_to_id") or "").strip()
+            # If the LLM returned a number, look it up.
+            reply_to = id_to_code.get(raw_reply, raw_reply) 
+            
             try:
                 aggression = float(result.get("aggression_level", profile["aggression_baseline"]))
-            except Exception:
+            except:
                 aggression = profile["aggression_baseline"]
         else:
             statement = text
             reasoning = ""
+            stance = "Neutral"
+            reply_to = ""
             aggression = profile["aggression_baseline"]
 
     except Exception as e:
-        # If Ollama OOMs, retry once with even smaller settings.
         if _is_cuda_oom(e):
-            try:
-                text2 = await ollama_generate([
-                    SystemMessage(content=full_system[:1800] + "\n[Prompt truncated for low-memory retry]"),
-                    *conversation_history[-6:],
-                    HumanMessage(content=f"Respond briefly (1-2 paragraphs). Headline: {headline}"),
-                ], temperature=0.5)
-                text2 = (text2 or "").strip()
-                if text2:
-                    statement = text2
-                    reasoning = "Low-memory retry after CUDA OOM."
-                    aggression = profile["aggression_baseline"]
-                else:
-                    raise RuntimeError("Low-memory retry returned empty output")
-            except Exception as e2:
-                statement = (
-                    "SYSTEM GENERATED (Ollama CUDA OOM): "
-                    "Unable to generate a model response due to GPU memory limits. "
-                    "This is a fallback message so the simulation can continue."
-                )
-                reasoning = f"CUDA OOM fallback: {e2}"
-                aggression = profile["aggression_baseline"]
+            statement = "SYSTEM: Model memory pressure. Fallback active."
+            reasoning = str(e)
+            stance = "Neutral"
+            reply_to = ""
+            aggression = 0.5
         else:
-            # If the model refuses, replace it with a safe in-character statement
-            # (no policy boilerplate in the UI).
-            if "refusal" in str(e).lower():
-                statement = _synthetic_in_character_statement(profile, headline, tension)
-                reasoning = "Synthetic fallback due to model refusal."
-                aggression = max(profile.get("aggression_baseline", 0.35), 0.55)
-            else:
-                statement = (
-                    "SYSTEM GENERATED (LLM unavailable): "
-                    "The model did not return a valid response. "
-                    "This is a fallback message so the simulation can continue."
-                )
-                reasoning = f"LLM error: {e}"
-                aggression = profile["aggression_baseline"]
+            statement = _synthetic_in_character_statement(profile, headline, tension)
+            reasoning = "Refusal fallback."
+            stance = "Neutral"
+            reply_to = ""
+            aggression = 0.6
 
     aggression = max(0.0, min(1.0, aggression))
     timestamp = datetime.now(timezone.utc).isoformat()
-
-    # Get RAG citations for the UI
-    rag_docs = retrieve_historical_context(headline, country_code=profile["country_code"], n_results=3)
-    citations = format_citations_for_ui(rag_docs)
+    msg_id = f"msg_{turn_count + 1}_{active_code}"
 
     # Create the message
-    message = AIMessage(
-        content=statement,
-        name=active_code,
-    )
+    message = AIMessage(content=statement, name=active_code)
 
-    # Build events for WebSocket
+    # Build events
     events = [
         {
             "type": "agent_thinking",
@@ -541,7 +560,7 @@ Output format:
                 "countryCode": active_code,
                 "reasoning": reasoning,
                 "relevanceScore": scores.get(active_code, 0.5),
-                "ragQuery": f"Querying historical DB for {profile['country_name']} context...",
+                "ragQuery": f"Consulting archives...",
             },
             "timestamp": timestamp,
         },
@@ -549,24 +568,25 @@ Output format:
             "type": "agent_speaking",
             "data": {
                 "message": {
-                    "id": f"msg_{turn_count + 1}_{active_code}",
+                    "id": msg_id,
                     "countryCode": active_code,
                     "countryName": profile["country_name"],
                     "flagEmoji": profile["flag_emoji"],
                     "content": statement,
                     "reasoning": reasoning,
-                    "citations": citations,
+                    "citations": format_citations_for_ui(retrieve_historical_context(headline, profile["country_code"])),
                     "aggressionScore": aggression,
+                    "stance": stance,
+                    "replyToId": reply_to,
                     "timestamp": timestamp,
                 },
-                "globalTension": state.get("global_tension", 0.0),
+                "globalTension": tension,
                 "turnCount": turn_count + 1,
             },
             "timestamp": timestamp,
         },
     ]
 
-    # Update aggression scores
     current_aggression = dict(state.get("aggression_scores", {}))
     current_aggression[active_code] = (current_aggression.get(active_code, 0.0) + aggression) / 2.0
 
@@ -574,7 +594,6 @@ Output format:
         "messages": [message],
         "active_speaker": active_code,
         "speaker_reasoning": reasoning,
-        "rag_citations": citations,
         "aggression_scores": current_aggression,
         "turn_count": turn_count + 1,
         "event_log": events,

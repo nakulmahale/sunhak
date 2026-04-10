@@ -126,6 +126,8 @@ export interface DebateMessage {
   reasoning: string;
   citations: string[];
   aggressionScore: number;
+  stance?: string;
+  replyToId?: string;
   timestamp: string;
 }
 

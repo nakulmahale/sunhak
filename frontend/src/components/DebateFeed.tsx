@@ -50,40 +50,96 @@ function extractStatement(content: string): string {
     text = text.replace(/^```[a-z]*\n/, '').replace(/\n```$/, '').trim();
   }
 
-  // If it looks like JSON
+  // If it's valid JSON, use the fields
   if (text.startsWith("{")) {
     try {
       const parsed = JSON.parse(text);
       if (parsed.statement) return parsed.statement;
-      if (parsed.content) return parsed.content;
-      if (parsed.response) return parsed.response;
-    } catch {
-      // Fallback regex
-      const match = text.match(/"statement"\s*:\s*"([\s\S]*?)(?:",\s*"internal_reasoning|"\s*})/);
-      if (match) return match[1].replace(/\\n/g, "\n").replace(/\\"/g, '"');
-    }
+    } catch { /* proceed to text cleaning */ }
   }
-  return text;
+
+  // CLEANING: If the model leaked JSON keys into the text (common in small models)
+  const keysToParse = ["statement", "stance", "reply_to_id", "replyToId"];
+  
+  keysToParse.forEach(key => {
+    // Look for both "key": "value" and [Key: Value] patterns
+    const jsonReg = new RegExp(`"?${key}"?\\s*:\\s*"([^"]*)"`, 'gi');
+    const bracketReg = new RegExp(`\\[${key}\\s*:\\s*([^\\]]*)\\]`, 'gi');
+    
+    text = text.replace(jsonReg, '');
+    text = text.replace(bracketReg, '');
+  });
+
+  // Final cleanup of redundant markers and trailing artifacts
+  return text.replace(/\[STATEMENT\]/gi, '')
+             .replace(/\[STANCE:[^\]]*\]/gi, '')
+             .replace(/\[REPLY_TO_ID:[^\]]*\]/gi, '')
+             .replace(/^["{]+|["}]+$/g, '') // Strip remaining quotes/braces
+             .replace(/\\n/g, '\n')
+             .replace(/\\"/g, '"')
+             .trim();
 }
 
-function ChatBubble({ message, isRight, isLatest }: { message: DebateMessage; isRight: boolean; isLatest: boolean }) {
+function ChatBubble({ 
+  message, 
+  isRight, 
+  isLatest, 
+  replyToMessage 
+}: { 
+  message: DebateMessage; 
+  isRight: boolean; 
+  isLatest: boolean;
+  replyToMessage?: DebateMessage;
+}) {
   const country = COUNTRIES[message.countryCode as CountryCode];
   const time = new Date(message.timestamp).toLocaleTimeString("en-US", {
     hour: "2-digit",
     minute: "2-digit",
   });
 
-  // Strong red accent when aggression is high (clear "fighting" visual).
   const aggressionColor = message.aggressionScore >= 0.55 ? "#ff1f1f" : "#4a6eff";
   const isBadTone = message.aggressionScore >= 0.65;
   const bubbleBg = "#ffffff";
+
+  // Stance styling
+  const getStanceColor = (stance?: string) => {
+    const s = stance?.toLowerCase() || "";
+    if (s.includes("agree")) return "#4caf50";
+    if (s.includes("defend") || s.includes("support")) return "#2196f3";
+    if (s.includes("refut") || s.includes("disagree") || s.includes("provoc")) return "#f44336";
+    return "#54656f";
+  };
 
   return (
     <motion.div
       initial={{ opacity: 0, y: 10 }}
       animate={{ opacity: 1, y: 0 }}
-      className={`flex ${isRight ? "flex-row-reverse" : "flex-row"} items-end gap-2 mb-3 px-4 slide-up`}
+      className={`flex ${isRight ? "flex-row-reverse" : "flex-row"} items-end gap-2 mb-6 px-4 slide-up relative group`}
     >
+      {/* Thread Line (The "Arrow") */}
+      {replyToMessage && (
+        <svg 
+          className={`absolute bottom-[60%] ${isRight ? "-right-2" : "-left-2"} w-12 h-32 overflow-visible pointer-events-none opacity-60 transition-opacity z-0`}
+          style={{ transform: isRight ? "scaleX(-1)" : "none" }}
+        >
+          <path 
+            d="M 12 110 C 12 70, -15 50, -15 0" 
+            fill="transparent" 
+            stroke={aggressionColor} 
+            strokeWidth="2"
+            strokeDasharray="4 3"
+          />
+          {/* Arrowhead */}
+          <path 
+            d="M -15 7 L -15 0 L -20 7" 
+            fill="transparent" 
+            stroke={aggressionColor} 
+            strokeWidth="2" 
+            strokeLinecap="round"
+          />
+        </svg>
+      )}
+
       {/* Flag Avatar */}
       <div className="flex-shrink-0 relative">
         <img
@@ -96,23 +152,45 @@ function ChatBubble({ message, isRight, isLatest }: { message: DebateMessage; is
           <span
             className="absolute -top-0.5 -right-0.5 w-2.5 h-2.5 rounded-full border-2 border-white"
             style={{ background: "#ff4d4d" }}
-            title="Bad tone"
           />
         )}
       </div>
 
       {/* Bubble */}
       <div className={`max-w-[75%] ${isRight ? "items-end" : "items-start"} flex flex-col gap-0.5`}>
-        <span className="text-[11px] font-semibold px-1 flex items-center gap-1.5" style={{ color: aggressionColor }}>
-          {message.countryName}
-          {isBadTone && <span className="w-1.5 h-1.5 rounded-full" style={{ background: "#ff4d4d" }} />}
-        </span>
+        {/* Reply To Preview (The "Arrow" / Context) */}
+        {replyToMessage && (
+          <div className="flex items-center gap-1.5 px-2 py-0.5 bg-gray-50 border border-gray-100 rounded-t-lg -mb-0.5 opacity-80 text-[10px] text-gray-500 italic">
+            <span className="text-[12px]">⤴</span>
+            <span>Replying to {replyToMessage.countryName}</span>
+          </div>
+        )}
+
+        <div className="flex items-center gap-2 px-1">
+          <span className="text-[11px] font-semibold flex items-center gap-1.5" style={{ color: aggressionColor }}>
+            {message.countryName}
+          </span>
+          {message.stance && (
+            <span 
+              className="text-[9px] uppercase font-bold px-1.5 rounded-full border" 
+              style={{ 
+                color: getStanceColor(message.stance), 
+                borderColor: `${getStanceColor(message.stance)}33`,
+                background: `${getStanceColor(message.stance)}08`
+              }}
+            >
+              {message.stance}
+            </span>
+          )}
+        </div>
+
         <div 
-          className="bubble px-3 py-2 border"
+          className="bubble px-3 py-2 border relative"
           style={{
             background: bubbleBg,
             borderColor: message.aggressionScore >= 0.55 ? "#ff1f1f55" : "#e9edef",
             boxShadow: message.aggressionScore >= 0.55 ? "0 2px 10px rgba(255,31,31,0.12)" : "0 1px 1px rgba(0,0,0,0.06)",
+            borderRadius: isRight ? "16px 16px 4px 16px" : "16px 16px 16px 4px"
           }}
         >
           <div className="text-[13.5px] leading-snug">
@@ -196,14 +274,23 @@ export default function DebateFeed({
       {/* Messages Feed */}
       <div ref={feedRef} className="flex-1 overflow-y-auto py-4 scroll-smooth">
         <AnimatePresence>
-          {messages.map((msg, i) => (
-            <ChatBubble 
-              key={msg.id || i} 
-              message={msg} 
-              isRight={i % 2 === 1} 
-              isLatest={i === messages.length - 1} 
-            />
-          ))}
+          {messages.map((msg, i) => {
+            // Find the message being replied to. 
+            // It could be an ID (msg_1_usa) or just the country code (usa).
+            const replyTo = messages.find(m => 
+              m.id === msg.replyToId || 
+              (msg.replyToId && m.countryCode === msg.replyToId.toLowerCase())
+            );
+            return (
+              <ChatBubble 
+                key={msg.id || i} 
+                message={msg} 
+                isRight={i % 2 === 1} 
+                isLatest={i === messages.length - 1} 
+                replyToMessage={replyTo}
+              />
+            );
+          })}
         </AnimatePresence>
 
         {thinkingAgent && (

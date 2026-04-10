@@ -110,6 +110,8 @@ class DebateMessage(BaseModel):
     reasoning: str = Field("", description="Internal monologue (hidden reasoning)")
     citations: list[str] = Field(default_factory=list, description="RAG document references")
     aggression_score: float = Field(0.0, description="Aggression of this specific statement")
+    stance: str = Field("", description="Diplomatic stance: agreeing, refuting, defending, etc.")
+    reply_to_id: str = Field("", description="ID of the message this is responding to")
     timestamp: str = Field(..., description="ISO timestamp")
 
 
