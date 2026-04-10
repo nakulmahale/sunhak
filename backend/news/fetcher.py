@@ -56,6 +56,9 @@ async def fetch_gdelt_headlines(
         keywords = random.sample(GEO_KEYWORDS, min(3, len(GEO_KEYWORDS)))
         query = " OR ".join(keywords)
 
+    # Enforce English results
+    query = f"({query}) sourcelang:english"
+
     params = {
         "query": query,
         "mode": "ArtList",

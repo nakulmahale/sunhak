@@ -25,15 +25,12 @@ EMBEDDING_MODEL = os.getenv("EMBEDDING_MODEL", "models/text-embedding-004")
 
 # Ollama generation safety knobs (prevents "silent hangs" in UI)
 LLM_REQUEST_TIMEOUT_S = float(os.getenv("LLM_REQUEST_TIMEOUT_S", "90"))
-LLM_NUM_PREDICT = int(os.getenv("LLM_NUM_PREDICT", "256"))
+LLM_NUM_PREDICT = int(os.getenv("LLM_NUM_PREDICT", "512"))
 # Ollama is a local server; too many concurrent requests can crash the runner on Windows.
 # Default to 1 for lower RAM/VRAM usage.
 OLLAMA_MAX_CONCURRENCY = int(os.getenv("OLLAMA_MAX_CONCURRENCY", "1"))
 # Lower context reduces VRAM/RAM pressure and prevents runner crashes on small GPUs.
 OLLAMA_NUM_CTX = int(os.getenv("OLLAMA_NUM_CTX", "1024"))
-
-# Default max tokens (lower = lower memory + faster). Used if supported by the client.
-LLM_NUM_PREDICT = int(os.getenv("LLM_NUM_PREDICT", "128"))
 # Deep /health?deep=1 can wait for cold model load; debate still uses LLM_REQUEST_TIMEOUT_S.
 HEALTH_DEEP_GENERATE_TIMEOUT_S = float(os.getenv("HEALTH_DEEP_GENERATE_TIMEOUT_S", "120"))
 

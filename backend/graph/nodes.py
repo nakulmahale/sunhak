@@ -330,7 +330,7 @@ Red lines: {', '.join(profile['red_lines'][:3])}
 Core alliances: {', '.join(profile['core_alliances'])}
 Core rivalries: {', '.join(profile['core_rivalries'])}
 
-Respond with ONLY a JSON object: {{"score": 0.0-1.0, "reason": "brief explanation"}}"""
+Respond with ONLY a JSON object in English: {{"score": 0.0-1.0, "reason": "brief explanation in English"}}"""
 
         try:
             text = await ollama_generate([
@@ -485,8 +485,10 @@ INSTRUCTIONS:
 1. Respond as {profile['country_name']}. 
 2. Identify which previous message number you are addressing (reply_to_id).
 3. Choose your diplomatic stance (e.g., AGREEMENT, DISAGREEMENT, DEFENSE, PROVOCATION).
-4. Output response as JSON.
+4. Output response as JSON in English.
 5. Tone: {profile['personality']['tone']}
+6. Respond in English only, preserving your specific tone.
+7. Length: Provide a detailed statement (minimum 4-6 sentences).
 
 Output format:
 {{
@@ -644,7 +646,7 @@ Consider:
 - Does it cross any red lines?
 - Does it require a rebuttal or support?
 
-Respond with ONLY a JSON object: {{"reaction_urgency": 0.0-1.0, "reason": "brief explanation"}}"""
+Respond with ONLY a JSON object in English: {{"reaction_urgency": 0.0-1.0, "reason": "brief explanation in English"}}"""
 
         try:
             text = await ollama_generate([

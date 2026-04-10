@@ -111,8 +111,9 @@ Cooperation Threshold: {profile['cooperation_threshold']} (minimum reciprocity t
 
 IMPORTANT: Stay in character at all times. Reference historical events when relevant.
 You have access to historical records — cite them to strengthen your arguments.
-Respond to provocations according to your red lines and aggression baseline.
 When your red lines are crossed, escalate firmly but maintain diplomatic language.
+
+LANGUAGE REQUIREMENT: All responses MUST be in English ONLY. Do not use your native language characters or phrases (like Cyrillic, Mandarin, or Persian) unless providing an English translation immediately after.
 """
 
     if context:
