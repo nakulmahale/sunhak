@@ -82,8 +82,6 @@ async def lifespan(app: FastAPI):
 
     # Initialize ChromaDB and seed if needed
     try:
-        # Chroma + local embedding init can take a while on first run.
-        # Make it visible and avoid a silent "hang".
         print("[>>] Initializing ChromaDB (RAG) ...", flush=True)
         store = await asyncio.wait_for(asyncio.to_thread(get_vector_store), timeout=20.0)
         stats = await asyncio.to_thread(store.get_collection_stats)
@@ -94,12 +92,11 @@ async def lifespan(app: FastAPI):
             await asyncio.to_thread(seed_database)
             stats = await asyncio.to_thread(store.get_collection_stats)
             print(f"[OK] ChromaDB seeded: {stats['historical_events']} events", flush=True)
-    except asyncio.TimeoutError:
-        print("[WARN] ChromaDB init timed out after 20s; starting without RAG.", flush=True)
-        print("       API will work; RAG endpoints may fail until Chroma is ready.", flush=True)
     except Exception as e:
         print(f"[WARN] ChromaDB init failed: {e}", flush=True)
-        print("       RAG features will be unavailable.", flush=True)
+
+    # Cache for the latest debate results (for friend's API access)
+    app.state.latest_debate_data = None
 
     print(f"\n[>>] Server ready at http://{HOST}:{PORT}", flush=True)
     print(f"[WS] WebSocket endpoint: ws://{HOST}:{PORT}/ws/debate", flush=True)
@@ -136,6 +133,21 @@ async def root():
         "status": "operational",
         "description": "Geopolitical Debate Sandbox API",
     }
+
+
+@app.get("/api/v1/report/latest")
+async def get_latest_report():
+    """
+    Returns the full JSON data of the most recently concluded debate.
+    Used by external systems (your friend's laptop) to consume debate results.
+    """
+    data = getattr(app.state, "latest_debate_data", None)
+    if not data:
+        return {
+            "status": "no_data",
+            "message": "No debate has concluded yet since the server started."
+        }
+    return data
 
 
 @app.get("/health")
@@ -281,8 +293,8 @@ async def run_debate(websocket: WebSocket):
     })
 
     try:
-        # Track events we've already sent
-        sent_events = 0
+        # Track the cumulative state
+        full_state = initial_state.copy()
 
         # Stream the graph execution
         async for state_update in graph.astream(initial_state):
@@ -290,13 +302,14 @@ async def run_debate(websocket: WebSocket):
             for node_name, node_output in state_update.items():
                 if not isinstance(node_output, dict):
                     continue
+                
+                # Update our cumulative state
+                full_state.update(node_output)
 
                 # Check for new events to stream
                 new_events = node_output.get("event_log", [])
                 for event in new_events:
                     try:
-                        # Broadcast once to all clients (including the initiator).
-                        # Sending both direct + broadcast causes duplicated messages in the UI.
                         await manager.broadcast(event)
                     except Exception as e:
                         print(f"[WS] Event send failed: {e}")
@@ -305,6 +318,24 @@ async def run_debate(websocket: WebSocket):
                 status = node_output.get("debate_status", "")
                 if status in ("consensus", "deadlock", "halted"):
                     print(f"[DEBATE] Ended with status: {status}")
+                    
+                    # PERSIST FOR API: Save a clean snapshot for the friend's API
+                    # We strip the large event_log to keep the JSON manageable
+                    report_snapshot = full_state.copy()
+                    if "event_log" in report_snapshot:
+                        del report_snapshot["event_log"]
+                    
+                    # Convert AI Messages to serializable dicts
+                    serializable_msgs = []
+                    for m in report_snapshot.get("messages", []):
+                        serializable_msgs.append({
+                            "name": getattr(m, "name", "system"),
+                            "content": getattr(m, "content", str(m)),
+                            "type": m.__class__.__name__
+                        })
+                    report_snapshot["messages"] = serializable_msgs
+                    
+                    app.state.latest_debate_data = report_snapshot
                     return
 
         print("[DEBATE] Graph execution complete")
