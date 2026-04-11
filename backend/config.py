@@ -43,7 +43,7 @@ PORT = int(os.getenv("PORT", "8000"))
 FRONTEND_URL = os.getenv("FRONTEND_URL", "http://localhost:3000")
 
 # ── Debate Parameters ─────────────────────────────────
-MAX_DEBATE_TURNS = int(os.getenv("MAX_DEBATE_TURNS", "8"))
+MAX_DEBATE_TURNS = int(os.getenv("MAX_DEBATE_TURNS", "6"))
 AGGRESSION_DEADLOCK_THRESHOLD = float(os.getenv("AGGRESSION_DEADLOCK_THRESHOLD", "0.9"))
 CONSENSUS_THRESHOLD = float(os.getenv("CONSENSUS_THRESHOLD", "0.3"))
 
